@@ -83,10 +83,11 @@ function chip(cls, label, value, tip) {
 }
 
 // 盤面の小さいカード（公共の職場・建てた建物）。色とアイコンは手札と同じ。foot は下の段（労働者の点や資産）
-function miniCard(key, fn, disabled, name, foot) {
+// big=手札と同じ大きさ（公共の職場）
+function miniCard(key, fn, disabled, name, foot, big) {
   const d = NE.BLD[key];
   const k = KIND[!d ? 'pub' : d.fac ? 'fac' : d.cat || 'shop'];
-  const b = btn('', 'card mini', fn, disabled);
+  const b = btn('', big ? 'card pub' : 'card mini', fn, disabled);
   b.style.setProperty('--bg', k[0]);
   b.style.setProperty('--fg', k[1]);
   b.title = `${name}　${NE.text(key)}`;
@@ -210,7 +211,7 @@ function render() {
       dots.append(i < s.occ.length ? meeple(COLORS[s.occ[i]]) : meeple('#1d1d1d', 'empty'));
     }
     const sold = NE.BLD[s.key] ? '（売られた）' : '';
-    pub.append(miniCard(s.key, () => clickWork({ pub: s.uid }), !my || !!ui || !NE.canUse(G, { pub: s.uid }), d.name + sold, [dots]));
+    pub.append(miniCard(s.key, () => clickWork({ pub: s.uid }), !my || !!ui || !NE.canUse(G, { pub: s.uid }), d.name + sold, [dots], true));
   }
   kids.push(pub);
 
