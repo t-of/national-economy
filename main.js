@@ -56,14 +56,20 @@ const KIND = {
   ind: ['#2456a6', '#fff', '工業', 'M3 21V11l5 3v-3l5 3v-3l5 3V4h3v17zM7 18h2M11 18h2M15 18h2'],
   fac: ['#c63d2a', '#fff', '施設', 'M4 21V6l8-3 8 3v15M2 21h20M9 21v-5h6v5M8 8h2M14 8h2M8 12h2M14 12h2'],
   shop: ['#1f7a6b', '#fff', '商業', 'M3 9l2-5h14l2 5M3 9h18M3 9v0a3 3 0 006 0 3 3 0 006 0 3 3 0 006 0M5 12v9h14v-9M10 21v-5h4v5'],
+  pub: ['#3a3a3a', '#fff', '公共', 'M3 21h18M4 10h16M12 3l9 7H3zM6 10v11M10 10v11M14 10v11M18 10v11'],
 };
-function posterCard(c, cls, fn, disabled) {
-  const d = c === 'g' ? null : NE.BLD[c];
-  const k = KIND[c === 'g' ? 'g' : d.fac ? 'fac' : d.cat || 'shop'];
-  const b = btn('', 'card ' + cls, fn, disabled);
+// 盤面の小さいカード（公共の職場・建てた建物）。色とアイコンは手札と同じ。foot は下の段（労働者の点や資産）
+function miniCard(key, fn, disabled, name, foot) {
+  const d = NE.BLD[key];
+  const k = KIND[!d ? 'pub' : d.fac ? 'fac' : d.cat || 'shop'];
+  const b = btn('', 'card mini', fn, disabled);
   b.style.setProperty('--bg', k[0]);
   b.style.setProperty('--fg', k[1]);
-  b.title = cardInfo(c);
+  b.title = `${name}　${NE.text(key)}`;
+  b.append(h('span', 'c-hd', null, [icon(k[3]), h('small', null, k[2])]), h('span', 'c-nm', name), h('span', 'c-fx', NE.text(key)), h('span', 'c-ft', null, foot));
+  return b;
+}
+function icon(d) {
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   svg.setAttribute('viewBox', '0 0 24 24');
   svg.setAttribute('fill', 'none');
@@ -71,8 +77,18 @@ function posterCard(c, cls, fn, disabled) {
   svg.setAttribute('stroke-width', '1.6');
   svg.setAttribute('stroke-linejoin', 'round');
   const p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-  p.setAttribute('d', k[3]);
+  p.setAttribute('d', d);
   svg.append(p);
+  return svg;
+}
+function posterCard(c, cls, fn, disabled) {
+  const d = c === 'g' ? null : NE.BLD[c];
+  const k = KIND[c === 'g' ? 'g' : d.fac ? 'fac' : d.cat || 'shop'];
+  const b = btn('', 'card ' + cls, fn, disabled);
+  b.style.setProperty('--bg', k[0]);
+  b.style.setProperty('--fg', k[1]);
+  b.title = cardInfo(c);
+  const svg = icon(k[3]);
   const hd = h('span', 'c-hd', null, [
     h('span', 'c-cost', null, [h('small', null, c === 'g' ? 'GOODS' : '建設'), document.createTextNode(c === 'g' ? '―' : d.cost)]),
     svg,
@@ -162,9 +178,7 @@ function render() {
       dots.append(dot);
     }
     const sold = NE.BLD[s.key] ? '（売られた）' : '';
-    const b = btn('', 'slot', () => clickWork({ pub: s.uid }), !my || !!ui || !NE.canUse(G, { pub: s.uid }));
-    b.append(h('b', null, d.name + sold), h('small', null, NE.text(s.key)), dots);
-    pub.append(b);
+    pub.append(miniCard(s.key, () => clickWork({ pub: s.uid }), !my || !!ui || !NE.canUse(G, { pub: s.uid }), d.name + sold, [dots]));
   }
   kids.push(pub);
 
@@ -191,9 +205,8 @@ function render() {
     p.bld.forEach((b, idx) => {
       const d = NE.BLD[b.key];
       const ok = p.human && my && !ui && NE.canUse(G, { own: idx });
-      const c = btn('', 'bld', () => clickWork({ own: idx }), !ok);
+      const c = miniCard(b.key, () => clickWork({ own: idx }), !ok, d.name, [h('span', null, b.used ? '使用済み' : ''), h('span', 'c-vp', null, [h('small', null, '資産'), document.createTextNode(d.value)])]);
       c.classList.toggle('used', b.used);
-      c.append(h('b', null, d.name), h('small', null, `価値${d.value}　${NE.text(b.key)}`));
       bs.append(c);
     });
     if (!p.bld.length) bs.append(h('small', 'muted', '建物なし'));

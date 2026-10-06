@@ -64,18 +64,14 @@ button.big { background: var(--accent); color: #222; border: 0; border-radius: 1
 button.big:disabled, button:disabled { opacity: 0.4; }
 .rules { text-align: left; font-size: 14px; color: var(--muted); }
 .info { font-size: 14px; }
-.public { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 6px; }
-.slot, .bld { display: flex; flex-direction: column; gap: 2px; text-align: left; padding: 8px; min-height: 44px; border-radius: 10px; border: 1px solid rgba(255,255,255,.18); background: rgba(255,255,255,.06); cursor: pointer; }
-.slot small, .bld small { color: var(--muted); font-size: 11px; }
-.dots { display: flex; gap: 4px; }
-.dots i { width: 12px; height: 12px; border-radius: 50%; border: 1px solid rgba(255,255,255,.4); }
+.public { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 6px; }
+.dots { display: flex; gap: 4px; flex-wrap: wrap; }
+.dots i { width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid var(--ink); background: #fff; }
 .player, .choice { border: 2px solid; border-radius: 12px; padding: 8px; display: flex; flex-direction: column; gap: 4px; background: rgba(0,0,0,.18); }
 .choice { border-color: var(--accent); gap: 8px; }
 .ph { display: flex; justify-content: space-between; }
 .stats { font-size: 13px; }
 .blds { display: flex; flex-wrap: wrap; gap: 6px; }
-.bld { min-width: 96px; }
-.bld.used { opacity: 0.5; }
 .log { white-space: pre-wrap; font-size: 12px; color: var(--muted); }
 
 /* 工業ポスター風のカード（63:88）。--bg と --fg は main.js が種類ごとに入れる */
@@ -99,3 +95,15 @@ button.big:disabled, button:disabled { opacity: 0.4; }
   .card .c-fx { display: none; }
   .card .c-nm { flex: 1; }
 }
+
+/* 盤面の小さいカード（公共の職場・建てた建物）。上に色の帯、下に効果と労働者・資産 */
+.card.mini { width: auto; min-width: 104px; aspect-ratio: auto; }
+.blds .card.mini { width: 112px; }
+.card.mini .c-hd { flex: 0 0 auto; display: flex; align-items: center; gap: 4px; padding: 3px 6px; }
+.card.mini .c-hd svg { position: static; width: 18px; height: 18px; }
+.card.mini .c-hd small { font-size: 9px; font-weight: 700; letter-spacing: .1em; }
+.card.mini .c-nm { font-size: 12px; padding-top: 4px; }
+.card.mini .c-fx { display: block; flex: 1; padding-bottom: 4px; }
+.card.mini .c-ft { min-height: 18px; }
+.card.mini .c-vp { font-size: 14px; }
+.card.used { opacity: .5; }
