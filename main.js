@@ -58,6 +58,30 @@ const KIND = {
   shop: ['#1f7a6b', '#fff', '商業', 'M3 9l2-5h14l2 5M3 9h18M3 9v0a3 3 0 006 0 3 3 0 006 0 3 3 0 006 0M5 12v9h14v-9M10 21v-5h4v5'],
   pub: ['#3a3a3a', '#fff', '公共', 'M3 21h18M4 10h16M12 3l9 7H3zM6 10v11M10 10v11M14 10v11M18 10v11'],
 };
+// 公共の職場は役目ごとにアイコンを変える（色は「公共」の灰色のまま）
+const PICK = 'M3 10c5-5 13-5 18 0M12 7L6 21';
+const CAP = 'M2 9l10-5 10 5-10 5zM6 11v5c3 2 9 2 12 0v-5M22 9v6';
+const PUB_ICON = {
+  quarry: PICK, mine: 'M3 10c5-5 13-5 18 0M12 7L6 21M14 15h7l-1 5h-5z', school: CAP, highschool: CAP, univ: CAP, voc: CAP,
+  carpenter: 'M13 3l8 8-3 3-8-8zM12 8l-9 9 3 3 9-9',
+  stall: KIND.shop[3], market: KIND.shop[3], super: KIND.shop[3], dept: KIND.shop[3],
+  expo: 'M12 3a9 9 0 100 18 9 9 0 000-18zM3 12h18M12 3c-3 3-3 15 0 18M12 3c3 3 3 15 0 18',
+};
+// 労働者のコマ（人の形）。used=置いたあと（中抜き）、temp=研修中（点線）
+const MEEPLE = 'M12 2.5a3 3 0 110 6 3 3 0 010-6zM8.5 9.5h7l5 3.5-1.2 2-3.8-2 1.8 8.5h-3.6L12 17l-1.7 4.5H6.7l1.8-8.5-3.8 2-1.2-2z';
+function meeple(color, cls) {
+  const m = icon(MEEPLE);
+  m.setAttribute('class', 'mp ' + (cls || ''));
+  m.style.color = color;
+  return m;
+}
+// 盤面の部品: お金・未払い賃金・点・山札などの札
+function chip(cls, label, value, tip) {
+  const c = h('span', 'chip ' + cls, null, [h('small', null, label), h('b', null, String(value))]);
+  if (tip) c.title = tip;
+  return c;
+}
+
 // 盤面の小さいカード（公共の職場・建てた建物）。色とアイコンは手札と同じ。foot は下の段（労働者の点や資産）
 function miniCard(key, fn, disabled, name, foot) {
   const d = NE.BLD[key];
@@ -66,7 +90,7 @@ function miniCard(key, fn, disabled, name, foot) {
   b.style.setProperty('--bg', k[0]);
   b.style.setProperty('--fg', k[1]);
   b.title = `${name}　${NE.text(key)}`;
-  b.append(h('span', 'c-hd', null, [icon(k[3]), h('small', null, k[2])]), h('span', 'c-nm', name), h('span', 'c-fx', NE.text(key)), h('span', 'c-ft', null, foot));
+  b.append(h('span', 'c-hd', null, [icon(d ? k[3] : PUB_ICON[key] || k[3]), h('small', null, k[2])]), h('span', 'c-nm', name), h('span', 'c-fx', NE.text(key)), h('span', 'c-ft', null, foot));
   return b;
 }
 function icon(d) {
@@ -164,7 +188,17 @@ function render() {
   if (my && G.phase === 'trim' && !ui) ui = { trim: true, sel: [] };
   const kids = [];
   const r = Math.min(G.round, NE.ROUNDS);
-  kids.push(h('div', 'info', `ラウンド ${r} / ${NE.ROUNDS}　賃金 ${NE.WAGE[r - 1]}/人　家計 ${G.house}　山札 ${G.deck.length}　` + (G.over ? '終了' : `手番: ${G.players[G.actor].name}`)));
+  // ラウンドカード（ラウンドと賃金）、家計、山札、手番
+  const turn = G.over ? h('span', 'turn', '終了') : h('span', 'turn', null, [meeple(COLORS[G.actor]), h('span', null, `${G.players[G.actor].name} の番`)]);
+  kids.push(h('div', 'top', null, [
+    h('div', 'round', null, [
+      h('span', 'r-no', null, [h('small', null, 'ROUND'), h('b', null, String(r)), h('span', null, `/${NE.ROUNDS}`)]),
+      h('span', 'r-wage', null, [h('small', null, '賃金 / 人'), h('b', null, `$${NE.WAGE[r - 1]}`)]),
+    ]),
+    chip('coin', '家計', `$${G.house}`, '家計のお金。売ったり稼いだりするときここから受け取る'),
+    chip('deck', '山札', G.deck.length, '建物の山札の残り'),
+    turn,
+  ]));
 
   // 公共の職場
   const pub = h('div', 'public');
@@ -173,9 +207,7 @@ function render() {
     const dots = h('span', 'dots');
     if (s.cap > 9) dots.append(h('small', null, `${s.occ.length} 人`));
     else for (let i = 0; i < s.cap; i++) {
-      const dot = h('i');
-      if (i < s.occ.length) dot.style.background = COLORS[s.occ[i]];
-      dots.append(dot);
+      dots.append(i < s.occ.length ? meeple(COLORS[s.occ[i]]) : meeple('#1d1d1d', 'empty'));
     }
     const sold = NE.BLD[s.key] ? '（売られた）' : '';
     pub.append(miniCard(s.key, () => clickWork({ pub: s.uid }), !my || !!ui || !NE.canUse(G, { pub: s.uid }), d.name + sold, [dots]));
@@ -213,9 +245,17 @@ function render() {
     const box = h('section', 'player', null, [
       h('div', 'ph', null, [
         h('b', null, p.name + (i === G.actor && !G.over ? ' ◀' : '') + (i === G.start ? '（スタート）' : '')),
-        h('span', null, `点 ${NE.score(p)}`),
+        chip('vp', '勝利点', NE.score(p), '建物の資産 + 終了時の点 + 現金 − 未払い賃金×3'),
       ]),
-      h('div', 'stats', `現金 ${p.cash}　負債 ${p.debt}　労働者 ${p.free}/${p.workers}${p.hired ? `（+${p.hired}）` : ''}　手札 ${p.hand.length}`),
+      h('div', 'stats', null, [
+        chip('coin', '現金', `$${p.cash}`),
+        ...(p.debt ? [chip('debt', '未払い賃金', p.debt, `1 枚 −${NE.penalty()} 点`)] : []),
+        h('span', 'workers', null, [
+          ...Array.from({ length: p.workers }, (_, j) => meeple(COLORS[i], j < p.free ? '' : 'used')),
+          ...Array.from({ length: p.hired }, () => meeple(COLORS[i], 'temp')),
+        ]),
+        chip('deck', '手札', p.hand.length),
+      ]),
       bs,
     ]);
     box.style.borderColor = COLORS[i];
