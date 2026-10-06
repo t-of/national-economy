@@ -2,7 +2,7 @@
 import { createRequire } from 'node:module';
 import assert from 'node:assert/strict';
 const NE = createRequire(import.meta.url)('./engine.js');
-const GAMES = 300;
+const GAMES = +process.argv[2] || 300;
 
 function check(G) {
   const cash = G.players.reduce((s, p) => s + p.cash, 0) + G.house;

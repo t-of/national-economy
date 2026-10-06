@@ -11,7 +11,7 @@ const NE = (() => {
   const ROUNDS = 9, MAX_WORKERS = 5, HAND_LIMIT = 5, START_HAND = 3, GOODS_COUNT = 24;
   const WAGE = [2, 2, 3, 3, 3, 4, 4, 5, 5];
   const START_CASH = [5, 6, 7, 8];
-  const LEVELS = { weak: 4, normal: 0.8, strong: 0.8 }; // CPU の強さ → 手の選びのゆらぎ。つよいは段階 6 まで ふつう と同じ
+  const LEVELS = { weak: 7, normal: 0.8, strong: 0.8 }; // CPU の強さ → 手の選びのゆらぎ。つよいは段階 6 まで ふつう と同じ
   // e: 効果。disc=捨てる枚数、drawB=建物を引く、drawG=消費財を引く、fill=手札がその枚数になるまで消費財（それ以上なら使えない）、
   //    take=家計から受け取る額（家計にそれだけないと使えない）、look=建物の山の上から見て 1 枚取る、build=建てる（値は費用の割引）、
   //    then=建てたあと建物を引く、hire=労働者を増やす（研修中）、hireTo=その人数になるまで増やす（以上なら使えない）、now=増えた人がすぐ働く、
@@ -290,37 +290,63 @@ const NE = (() => {
     return true;
   }
 
-  // 効果そのものの値打ち（建てるときの目安にも使う）
-  const effVal = (e, P) => (e.drawB ? (e.empty && !P.hand.length ? e.empty : e.drawB) * 2.2 : 0) + (e.then || 0) * 2.2 + (e.drawG || 0) * 1.2 + (e.fill ? Math.max(0, e.fill - P.hand.length) * 1.2 : 0) + (e.look ? 6 : 0) + (e.take || 0) * 0.8;
+  // CPU の評価は「点」で測る。現金 1 = 1 点、手札 1 枚 = 約 2〜3 点（市場で 1 枚 6 点になるが、場所は 1 つしかない）。
+  const TUNE = { card: 3.5, act: 1.5, uses: 1.2, hireAct: 6, liq: 0.7, own: 2, margin: 1, bslot: 5 }; // card=手札 1 枚の点 act=ほかの手の基準 uses=建物の効果を使う回数の係数 hireAct=労働者 1 人の 1 ラウンドの稼ぎ liq=売れない建物の割引 own=自分の建物の下駄 margin=雇うときの現金の余裕 bslot=建てる職場の点
+  const cardPts = (c) => (c === 'g' ? TUNE.card * 0.8 : TUNE.card + BLD[c].value * 0.06);
+  // 残りラウンドが少ないほど、持っている札は使い道がなくなる
+  const cardScale = (G) => Math.min(1, (ROUNDS - G.round + 0.5) / 3);
+  // 効果 e を 1 回使ったときの値打ち（点）。手札の枚数は上限を超えた分を安く見る
+  function effPts(G, P, e, extra) {
+    const room = Math.max(0, handLimit(P) - P.hand.length + (extra || 0)), cs = cardScale(G);
+    let n = 0, v = 0;
+    const draw = (k, per) => { const x = Math.min(k, Math.max(0, room - n)); n += x; v += (x * per + (k - x) * 0.3) * cs; };
+    if (e.drawB) draw(e.empty && !P.hand.length ? e.empty : e.drawB, TUNE.card + 0.4);
+    if (e.then) draw(e.then, TUNE.card + 0.4);
+    if (e.drawG) draw(e.drawG, TUNE.card * 0.8);
+    if (e.fill) draw(Math.max(0, e.fill - P.hand.length), TUNE.card * 0.8);
+    if (e.look) v += (TUNE.card + 3) * cs;
+    if (e.build != null) v += TUNE.bslot * cs; // 大工の枠は少ないので、自分の建てる職場は貴重
+    return v;
+  }
 
-  // CPU の手。置ける所から得そうな所を選び、建てられれば建てる
+  // CPU の手。置ける所を点で比べ、建てられれば建てる
   function plan(G, w) {
     const sp = spot(G, G.actor, w);
     const P = G.players[G.actor], e = sp.e, hand = P.hand;
-    const due = WAGE[Math.min(G.round, ROUNDS) - 1] * total(P), mw = P.cash < due ? 3 : 1.5; // 賃金が払えそうにないときはお金を欲しがる
+    const cs = cardScale(G), left = ROUNDS - G.round;
+    // 賃金の見込み: 払えず、売る建物でも足りないなら未払い（1 あたり 3 点）。売れば足りるなら少しだけ急ぐ
+    const due = WAGE[G.round - 1] * total(P), deficit = due - P.cash;
+    const sellVal = sellable(P).reduce((t, i) => t + BLD[P.bld[i].key].value, 0);
+    const mw = deficit <= 0 ? 1 : deficit <= sellVal ? 1.2 : 2.2;
     let a = { kind: 'place', ...w, disc: [] }, s = 0;
+    const liq = P.cash >= due * 1.5 ? 1 : TUNE.liq; // 売れない建物は賃金の足しにならない
+    const lose = (d) => d.reduce((t, x) => t + cardPts(hand[x]) * cs, 0);
     if (e.build != null) {
       let best = -Infinity;
-      const left = (ROUNDS - G.round + 1) / ROUNDS;
       hand.forEach((c, i) => {
         if (!isBld(c) || buildCost(c, e.build) > hand.length - 1) return;
-        const d = cheapest(hand, buildCost(c, e.build), i), lost = d.reduce((t, x) => t + keepValue(hand[x]), 0);
-        const B = BLD[c];
-        const bonus = B.end ? B.end({ ...P, bld: P.bld.concat({ key: c }), hand: hand.filter((x, j) => j !== i && !d.includes(j)) }) - B.end(P) : 0;
-        const v = 6 + B.value * 1.3 + bonus - lost * 0.5 + (B.e ? effVal(B.e, P) * 0.4 * left : 0);
+        const d = cheapest(hand, buildCost(c, e.build), i), B = BLD[c];
+        const rest = hand.filter((x, j) => j !== i && !d.includes(j));
+        const bonus = B.end ? B.end({ ...P, bld: P.bld.concat({ key: c }), hand: rest }) - B.end(P) : 0;
+        const uses = left * TUNE.uses + (G.round < ROUNDS ? 0.3 : 0); // ラウンド 9 は建てたそのラウンドでしか使えない
+        const use = B.e ? Math.max(0, effPts(G, { ...P, hand: rest }, B.e) + (B.e.take || 0) * 0.5 - TUNE.act) * uses : 0;
+        const v = TUNE.own + (B.nosell ? B.value * liq : B.value) + bonus + use - lose(d) - cardPts(c) * cs;
         if (v > best) { best = v; a = { kind: 'place', ...w, build: i, disc: d }; }
       });
-      s += best + (e.then || 0) * 2.2;
+      s += best + (e.then ? effPts(G, P, { drawB: e.then }, -1) : 0);
     } else if (e.disc) {
       a.disc = cheapest(hand, e.disc, -1);
-      s -= a.disc.reduce((t, x) => t + keepValue(hand[x]) * 0.5 + 0.5, 0);
+      s -= lose(a.disc);
     }
     if (e.take) s += e.take * mw;
-    s += effVal({ ...e, take: 0 }, P);
+    s += effPts(G, P, { ...e, then: 0, take: 0 }, a.disc.length);
     if (e.start) s += 1;
     if (e.hire || e.hireTo) {
-      const add = e.hireTo ? Math.min(e.hireTo, maxWorkers(P)) - total(P) : 1;
-      s += total(P) + add <= 3 && G.round <= 5 ? 3 * add : -8; // 労働者は 4 人まで。賃金が重くなる
+      const add = e.hireTo ? Math.min(e.hireTo, maxWorkers(P)) - total(P) : Math.min(e.hire, maxWorkers(P) - total(P));
+      // 研修中の人は今ラウンドから賃金がかかり、働くのは次から
+      const wages = WAGE.slice(G.round - 1).reduce((t, x) => t + x, 0);
+      const need = total(P) + add > 4 ? 3 : 0; // 4 人を超えると仕事場が足りない
+      s += add * (left * TUNE.hireAct - wages - need) - (P.cash < due + add * WAGE[G.round - 1] + TUNE.margin ? 30 : 0); // 賃金が払える見込みがなければ雇わない
     }
     return { a, s: s + G.rng() * (LEVELS[G.level] || LEVELS.normal) };
   }
@@ -329,8 +355,8 @@ const NE = (() => {
     const P = G.players[G.actor];
     if (G.phase === 'trim') return { kind: 'trim', disc: cheapest(P.hand, P.hand.length - handLimit(P), -1) };
     if (G.phase === 'pick') {
-      let bi = 0, bv = -1;
-      G.look.forEach((c, i) => { const v = BLD[c].value - BLD[c].cost * 0.3; if (v > bv) { bv = v; bi = i; } });
+      let bi = 0, bv = -Infinity;
+      G.look.forEach((c, i) => { const v = BLD[c].value - BLD[c].cost * 3; if (v > bv) { bv = v; bi = i; } });
       return { kind: 'pick', i: bi };
     }
     const ws = G.pub.map((s) => ({ pub: s.uid })).concat(P.bld.map((b, i) => ({ own: i })));
