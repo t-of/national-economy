@@ -77,8 +77,25 @@ button.big:disabled, button:disabled { opacity: 0.4; }
 .bld { min-width: 96px; }
 .bld.used { opacity: 0.5; }
 .log { white-space: pre-wrap; font-size: 12px; color: var(--muted); }
-.card { min-width: 110px; max-width: 150px; }
-.card.goods { opacity: .75; border-style: dashed; }
-.card.sel { background: rgba(255, 211, 92, .3); border-color: var(--accent); }
-.card.build { background: rgba(108, 198, 255, .3); border-color: #6cc6ff; }
-.card:disabled { opacity: .35; }
+
+/* 工業ポスター風のカード（63:88）。--bg と --fg は main.js が種類ごとに入れる */
+.card { --ink: #1d1d1d; width: 126px; aspect-ratio: 63 / 88; padding: 0; overflow: hidden; display: flex; flex-direction: column; text-align: left; gap: 0; min-height: 0; border-radius: 8px; border: 2px solid var(--ink); background: #fbf9f4; color: var(--ink); font-family: 'Zen Kaku Gothic New', system-ui, -apple-system, 'Hiragino Sans', 'Noto Sans JP', sans-serif; cursor: pointer; }
+.card:disabled { opacity: .45; }
+.card.sel { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent), 0 0 14px 3px rgba(255, 211, 92, .7); }
+.card.build { border-color: #6cc6ff; box-shadow: 0 0 0 3px #6cc6ff, 0 0 14px 3px rgba(108, 198, 255, .7); }
+.card .c-hd { flex: 0 0 47%; position: relative; padding: 6px; background: var(--bg); color: var(--fg); display: block; }
+.card .c-cost { font-family: 'Dela Gothic One', system-ui, sans-serif; font-size: 28px; line-height: .9; font-weight: 700; display: block; }
+.card .c-cost small { font-family: 'Zen Kaku Gothic New', system-ui, sans-serif; font-weight: 700; font-size: 9px; display: block; letter-spacing: .1em; margin-bottom: 1px; color: inherit; }
+.card .c-hd svg { position: absolute; right: 5px; bottom: 5px; width: 40px; height: 40px; }
+.card .c-ns { position: absolute; right: 4px; top: 4px; background: #1d1d1d; color: #fff; font-size: 8px; font-weight: 700; padding: 1px 4px; border-radius: 3px; }
+.card .c-nm { font-family: 'Dela Gothic One', system-ui, sans-serif; font-size: 13px; line-height: 1.15; padding: 5px 7px 0; }
+.card .c-fx { flex: 1; font-size: 9px; line-height: 1.4; padding: 3px 7px; color: #3a3a3a; overflow: hidden; }
+.card .c-ft { display: flex; align-items: center; justify-content: space-between; padding: 0 7px 5px; font-size: 9px; font-weight: 700; }
+.card .c-vp { font-family: 'Dela Gothic One', system-ui, sans-serif; font-size: 16px; line-height: 1; }
+.card .c-vp small { font-family: 'Zen Kaku Gothic New', system-ui, sans-serif; font-size: 8px; margin-right: 2px; }
+/* 狭い画面: 3 枚並ぶ大きさにして効果の文を省く（全文は長押し・ホバーの title） */
+@media (max-width: 480px) {
+  .card { width: 104px; }
+  .card .c-fx { display: none; }
+  .card .c-nm { flex: 1; }
+}

@@ -49,6 +49,44 @@ function btn(text, cls, fn, disabled) {
 }
 const cardInfo = (c) => (c === 'g' ? '建てられない。捨てて費用にする' : `費用${NE.BLD[c].cost} 価値${NE.BLD[c].value}${NE.BLD[c].nosell ? '（売れない）' : ''}　${NE.text(c)}`);
 
+// 工業ポスター風のカード。種類で色とアイコンが決まる。狭い画面では CSS が効果の文を隠す（全文は title に入れてある）
+const KIND = {
+  g: ['#d9d2c0', '#1d1d1d', '共通', 'M3 7l9-4 9 4-9 4-9-4zm0 0v10l9 4 9-4V7M12 11v10'],
+  agri: ['#f2c230', '#1d1d1d', '農業', 'M12 22V7M12 7c-2.5 0-3.5-2.5-3.5-4.5C11 2.5 12 4.5 12 7zm0 0c2.5 0 3.5-2.5 3.5-4.5C13 2.5 12 4.5 12 7zM12 13c-2.5 0-3.5-2.5-3.5-4.5 2.5 0 3.5 2 3.5 4.5zm0 0c2.5 0 3.5-2.5 3.5-4.5-2.5 0-3.5 2-3.5 4.5zM12 19c-2.5 0-3.5-2.5-3.5-4.5 2.5 0 3.5 2 3.5 4.5zm0 0c2.5 0 3.5-2.5 3.5-4.5-2.5 0-3.5 2-3.5 4.5z'],
+  ind: ['#2456a6', '#fff', '工業', 'M3 21V11l5 3v-3l5 3v-3l5 3V4h3v17zM7 18h2M11 18h2M15 18h2'],
+  fac: ['#c63d2a', '#fff', '施設', 'M4 21V6l8-3 8 3v15M2 21h20M9 21v-5h6v5M8 8h2M14 8h2M8 12h2M14 12h2'],
+  shop: ['#1f7a6b', '#fff', '商業', 'M3 9l2-5h14l2 5M3 9h18M3 9v0a3 3 0 006 0 3 3 0 006 0 3 3 0 006 0M5 12v9h14v-9M10 21v-5h4v5'],
+};
+function posterCard(c, cls, fn, disabled) {
+  const d = c === 'g' ? null : NE.BLD[c];
+  const k = KIND[c === 'g' ? 'g' : d.fac ? 'fac' : d.cat || 'shop'];
+  const b = btn('', 'card ' + cls, fn, disabled);
+  b.style.setProperty('--bg', k[0]);
+  b.style.setProperty('--fg', k[1]);
+  b.title = cardInfo(c);
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('fill', 'none');
+  svg.setAttribute('stroke', 'currentColor');
+  svg.setAttribute('stroke-width', '1.6');
+  svg.setAttribute('stroke-linejoin', 'round');
+  const p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  p.setAttribute('d', k[3]);
+  svg.append(p);
+  const hd = h('span', 'c-hd', null, [
+    h('span', 'c-cost', null, [h('small', null, c === 'g' ? 'GOODS' : '建設'), document.createTextNode(c === 'g' ? '―' : d.cost)]),
+    svg,
+  ]);
+  if (d && d.nosell) hd.append(h('span', 'c-ns', '売れない'));
+  b.append(hd, h('span', 'c-nm', NE.cardName(c)),
+    h('span', 'c-fx', c === 'g' ? '建物の費用として捨てる。点にはならない。' : NE.text(c)),
+    h('span', 'c-ft', null, [
+      h('span', null, c === 'g' ? '共通' : `${k[2]} ×${d.count}`),
+      h('span', 'c-vp', null, d ? [h('small', null, '資産'), document.createTextNode(d.value)] : []),
+    ]));
+  return b;
+}
+
 function title() {
   clearTimeout(timer);
   G = null; ui = null;
@@ -140,11 +178,9 @@ function render() {
     let ok = !!ui;
     if (ui && ui.need && ui.need.build != null && (ui.build == null || ui.build === i)) ok = c !== 'g' && NE.buildCost(c, ui.need.build) <= me.hand.length - 1;
     else if (ui && ui.need && ui.need.build != null && ui.build != null) ok = i !== ui.build;
-    const b = btn('', 'bld card', () => tapCard(i, me), !ok);
+    const b = posterCard(c, '', () => tapCard(i, me), !ok);
     b.classList.toggle('sel', sel.includes(i));
     b.classList.toggle('build', ui && ui.build === i);
-    b.classList.toggle('goods', c === 'g');
-    b.append(h('b', null, NE.cardName(c)), h('small', null, cardInfo(c)));
     hand.append(b);
   });
   kids.push(h('section', 'player', null, [h('div', 'ph', null, [h('b', null, `手札 ${me.hand.length} 枚（上限 ${NE.handLimit(me)}）`)]), hand]));
@@ -200,9 +236,7 @@ function choicePanel(me) {
 function pickPanel() {
   const list = h('div', 'blds');
   G.look.forEach((c, i) => {
-    const b = btn('', 'bld card', () => act({ kind: 'pick', i }));
-    b.classList.toggle('goods', c === 'g');
-    b.append(h('b', null, NE.cardName(c)), h('small', null, cardInfo(c)));
+    const b = posterCard(c, '', () => act({ kind: 'pick', i }));
     list.append(b);
   });
   return h('section', 'choice', null, [h('div', null, '山札の上から 1 枚取る（残りは捨て札）'), list]);
