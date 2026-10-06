@@ -144,3 +144,38 @@ button.big:disabled, button:disabled { opacity: 0.4; }
 .card.pub .c-hd svg { position: static; width: 52px; height: 52px; }
 .card.pub .c-fx { display: block; flex: 1; }
 .card.pub .c-nm { flex: none; }
+
+/* スマホ: 2 つの列をほどいて 1 列に（上の段 → 公共 → 選ぶ → 手札 → プレイヤー・記録） */
+.col-main, .col-side { display: contents; }
+.top { order: 1; }
+.public { order: 2; }
+.choice { order: 3; }
+.hand { order: 4; }
+.col-side > .player, .log { order: 5; }
+
+/* PC: 画面いっぱいに 2 列。ページはスクロールさせず、あふれたら列の中だけスクロール */
+@media (min-width: 1024px) and (min-height: 600px) {
+  .app { height: 100dvh; min-height: 0; overflow: hidden; }
+  .stage.game {
+    --cw: 130px; /* main.js の fitPC が、公共の職場が縦に収まるまで小さくする */
+    min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) clamp(320px, 26vw, 420px); gap: 12px; padding: 8px 0; align-items: stretch;
+  }
+  .stage.game .col-main, .stage.game .col-side { display: flex; flex-direction: column; gap: 10px; min-height: 0; }
+  .stage.game .public { flex: 1; min-height: 0; overflow-y: auto; align-content: flex-start; }
+  .stage.game .col-side { overflow-y: auto; padding-right: 2px; }
+  .stage.game .hand .blds { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; }
+  .stage.game .card:not(.mini) { width: var(--cw); flex: none; }
+  .stage.game .card.pub .c-hd svg { width: 40%; height: auto; }
+  .stage.game .hand .card { width: min(var(--cw), 110px); }
+  .stage.game.tight .card.mini .c-fx { display: none; }
+  .stage.game.tight .blds .card.mini { width: 96px; }
+  .stage.game.tight2 .blds .card.mini { flex-direction: row; align-items: center; width: calc(50% - 3px); height: 28px; border-width: 1.5px; border-radius: 5px; }
+  .stage.game.tight2 .card.mini .c-hd { align-self: stretch; padding: 0 4px; }
+  .stage.game.tight2 .card.mini .c-hd small, .stage.game.tight2 .card.mini .c-ft > span:first-child { display: none; }
+  .stage.game.tight2 .card.mini .c-nm { flex: 1; padding: 0 4px; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .stage.game.tight2 .card.mini .c-ft { padding: 0 5px; min-height: 0; }
+  .stage.game.tight2 .player { gap: 3px; padding: 6px; }
+}
+@media (min-width: 1024px) and (min-height: 600px) {
+  .stage.game.tight2 .log { display: none; }
+}

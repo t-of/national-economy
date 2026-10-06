@@ -91,7 +91,7 @@ function miniCard(key, fn, disabled, name, foot, big) {
   b.style.setProperty('--bg', k[0]);
   b.style.setProperty('--fg', k[1]);
   b.title = `${name}　${NE.text(key)}`;
-  b.append(h('span', 'c-hd', null, [icon(d ? k[3] : PUB_ICON[key] || k[3]), h('small', null, k[2])]), h('span', 'c-nm', name), h('span', 'c-fx', NE.text(key)), h('span', 'c-ft', null, foot));
+  b.append(h('span', 'c-hd', null, [icon(d ? k[3] : PUB_ICON[key] || k[3]), h('small', null, big && d ? `${k[2]}・売却` : k[2])]), h('span', 'c-nm', name), h('span', 'c-fx', NE.text(key)), h('span', 'c-ft', null, foot));
   return b;
 }
 function icon(d) {
@@ -131,6 +131,7 @@ function posterCard(c, cls, fn, disabled) {
 function title() {
   clearTimeout(timer);
   G = null; ui = null;
+  stage.classList.remove('game');
   stage.replaceChildren(h('div', 'title', null, [
     h('h2', null, 'ナショナルエコノミー風'),
     h('p', 'muted', '手札の建物カードを、別の手札を捨てて建てる。9 ラウンド後、建物の資産価値＋現金−未払い賃金×3 で勝負。'),
@@ -210,13 +211,14 @@ function render() {
     else for (let i = 0; i < s.cap; i++) {
       dots.append(i < s.occ.length ? meeple(COLORS[s.occ[i]]) : meeple('#1d1d1d', 'empty'));
     }
-    const sold = NE.BLD[s.key] ? '（売られた）' : '';
-    pub.append(miniCard(s.key, () => clickWork({ pub: s.uid }), !my || !!ui || !NE.canUse(G, { pub: s.uid }), d.name + sold, [dots], true));
+    pub.append(miniCard(s.key, () => clickWork({ pub: s.uid }), !my || !!ui || !NE.canUse(G, { pub: s.uid }), d.name, [dots], true));
   }
   kids.push(pub);
 
-  if (my && G.phase === 'pick') kids.push(pickPanel());
-  else if (ui) kids.push(choicePanel(me));
+  // PC では右の列（選ぶ・プレイヤー・記録）。スマホでは CSS の order で 1 列に並べ直す
+  const side = [];
+  if (my && G.phase === 'pick') side.push(pickPanel());
+  else if (ui) side.push(choicePanel(me));
 
   // 自分の手札
   const sel = ui ? ui.sel : [];
@@ -230,7 +232,7 @@ function render() {
     b.classList.toggle('build', ui && ui.build === i);
     hand.append(b);
   });
-  kids.push(h('section', 'player', null, [h('div', 'ph', null, [h('b', null, `手札 ${me.hand.length} 枚（上限 ${NE.handLimit(me)}）`)]), hand]));
+  kids.push(h('section', 'player hand', null, [h('div', 'ph', null, [h('b', null, `手札 ${me.hand.length} 枚（上限 ${NE.handLimit(me)}）`)]), hand]));
 
   // プレイヤー
   G.players.forEach((p, i) => {
@@ -260,14 +262,30 @@ function render() {
       bs,
     ]);
     box.style.borderColor = COLORS[i];
-    kids.push(box);
+    side.push(box);
   });
 
-  kids.push(h('div', 'log', G.log.slice(-6).join('\n')));
-  if (G.over) kids.push(overPanel());
-  stage.replaceChildren(...kids);
+  side.push(h('div', 'log', G.log.slice(-6).join('\n')));
+  if (G.over) side.unshift(overPanel());
+  stage.classList.add('game');
+  stage.replaceChildren(h('div', 'col-main', null, kids), h('div', 'col-side', null, side));
+  fitPC();
 
   if (!G.over && !my) timer = setTimeout(() => { NE.apply(G, NE.cpuAct(G)); render(); }, 650);
+}
+
+// PC（2 列）のとき、公共の職場が縦に収まるまでカードを小さくし、右の列があふれたら建物を効果の文なし → 1 行の札と順に縮める
+const PC = matchMedia('(min-width: 1024px) and (min-height: 600px)');
+PC.addEventListener('change', () => G && render());
+addEventListener('resize', () => G && PC.matches && fitPC());
+function fitPC() {
+  stage.style.removeProperty('--cw');
+  stage.classList.remove('tight', 'tight2');
+  if (!PC.matches) return;
+  const pub = stage.querySelector('.public');
+  const side = stage.querySelector('.col-side');
+  for (let w = 130; w >= 64 && pub.scrollHeight > pub.clientHeight; w -= 4) stage.style.setProperty('--cw', w + 'px');
+  for (const c of ['tight', 'tight2']) if (side.scrollHeight > side.clientHeight) stage.classList.add(c);
 }
 
 function choicePanel(me) {
