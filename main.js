@@ -30,7 +30,7 @@ function setAudioSession(soundOn) {
 const COLORS = ['#ffd35c', '#6cc6ff', '#ff8a7a', '#9be37a'];
 const stage = document.getElementById('stage');
 let G = null;
-let ui = null; // 人の手番の途中の選択: { mode: 'sell', sell } か { mode: 'build' }
+let ui = null; // 人の手番の途中の選択: { w, need, sel:[手札の添字], build } か { trim:true, sel }
 let timer = 0;
 
 function h(tag, cls, text, kids) {
@@ -47,146 +47,172 @@ function btn(text, cls, fn, disabled) {
   b.addEventListener('click', fn);
   return b;
 }
-const handText = (hand) => NE.KINDS.map((k) => `${NE.GOODS[k].name}${hand[k]}`).join(' ');
-const needText = (o) => NE.KINDS.filter((k) => o[k]).map((k) => `${NE.GOODS[k].name}${o[k]}`).join('+');
+const cardInfo = (c) => (c === 'g' ? '建てられない。捨てて費用にする' : `費用${NE.BLD[c].cost} 価値${NE.BLD[c].value}${NE.BLD[c].nosell ? '（売れない）' : ''}　${NE.effText(NE.BLD[c].e)}`);
 
 function title() {
   clearTimeout(timer);
   G = null; ui = null;
   stage.replaceChildren(h('div', 'title', null, [
     h('h2', null, 'ナショナルエコノミー風'),
-    h('p', 'muted', '労働者を置いて資源・お金・建物を集める。9 ラウンド後、建物の資産価値＋現金−負債で勝負。'),
+    h('p', 'muted', '手札の建物カードを、別の手札を捨てて建てる。9 ラウンド後、建物の資産価値＋現金−負債×3 で勝負。'),
     h('p', null, '人数を選んではじめる'),
     h('div', 'row', null, [2, 3, 4].map((n) => btn(`${n} 人`, 'big', () => start(n)))),
     h('details', 'rules', null, [h('summary', null, '遊び方'), h('div', null, null, [
-      h('p', null, '手番ごとに労働者 1 人を、公共の職場か自分の建物に置く（置ける数は決まっている）。置いたらすぐ効果が出る。'),
-      h('p', null, '全員の労働者がなくなる（またはパス）とラウンド終了。労働者 1 人ごとに賃金を払い、足りない分は 5 借りて負債になる（終了時 −7 点）。'),
-      h('p', null, `賃金は ${NE.WAGE.join('・')} と上がる。労働者は職業安定所で増やせる（次のラウンドから、最大 5 人）。`),
-      h('p', null, '建物は建設現場で建てる。自分の建物に置くと、カードを使ってカードやお金を得る。カードは市場で売る。'),
+      h('p', null, '手番ごとに労働者 1 人を、公共の職場か自分の建物に置いてすぐ効果を使う。全員が置き終えたら賃金を払う。'),
+      h('p', null, '建物は「大工」などで建てる。手札の建物カードを選び、費用の枚数だけ別の手札を捨てる（消費財は捨てるためのカード）。'),
+      h('p', null, '賃金は家計に入り、露店・市場などで家計から受け取れる。払えないときは建物を売り（公共の職場になる）、足りなければ負債。'),
+      h('p', null, '手札は各ラウンドの終わりに 5 枚まで。'),
     ])]),
   ]));
 }
 
 function start(n) {
-  G = NE.create(n, 1);
+  G = NE.create(n);
   ui = null;
   render();
 }
 
-function mine() { return G && !G.over && G.players[G.turn].human; }
+const mine = () => G && !G.over && G.players[G.actor].human;
 
-function place(a) {
+function act(a) {
   ui = null;
   NE.apply(G, a);
   render();
 }
 
-function clickPublic(id) {
-  if (id === 'market') ui = { mode: 'sell', sell: { F: 0, M: 0, P: 0 } };
-  else if (id === 'build') ui = { mode: 'build' };
-  else return place({ kind: 'pub', id });
+function clickWork(w) {
+  const need = NE.needs(G, w);
+  if (!need.disc && need.build == null) return act({ kind: 'place', ...w });
+  ui = { w, need, sel: [], build: null };
+  render();
+}
+
+// 選ぶ枚数（まだ建てる建物を選んでいなければ null）
+function want(me) {
+  if (ui.trim) return me.hand.length - NE.handLimit(me);
+  if (ui.need.build != null) return ui.build == null ? null : NE.buildCost(me.hand[ui.build], ui.need.build);
+  return ui.need.disc;
+}
+
+function tapCard(i, me) {
+  if (ui.need && ui.need.build != null && (ui.build == null || ui.build === i)) {
+    ui.build = ui.build === i ? null : i; ui.sel = [];
+  } else if (ui.sel.includes(i)) ui.sel = ui.sel.filter((x) => x !== i);
+  else if (ui.sel.length < want(me)) ui.sel.push(i);
   render();
 }
 
 function render() {
   clearTimeout(timer);
   if (!G) return title();
-  const legal = mine() ? NE.legal(G) : [];
+  const my = mine();
   const me = G.players[0];
+  if (my && G.phase === 'trim' && !ui) ui = { trim: true, sel: [] };
   const kids = [];
-  kids.push(h('div', 'info', `ラウンド ${Math.min(G.round, NE.ROUNDS)} / ${NE.ROUNDS}　賃金 ${NE.WAGE[Math.min(G.round, NE.ROUNDS) - 1]}/人　` + (G.over ? '終了' : `手番: ${G.players[G.turn].name}`)));
+  const r = Math.min(G.round, NE.ROUNDS);
+  kids.push(h('div', 'info', `ラウンド ${r} / ${NE.ROUNDS}　賃金 ${NE.WAGE[r - 1]}/人　家計 ${G.house}　山札 ${G.deck.length}　` + (G.over ? '終了' : `手番: ${G.players[G.actor].name}`)));
 
   // 公共の職場
   const pub = h('div', 'public');
-  for (const p of NE.PUBLIC) {
-    const occ = G.slots[p.id];
+  for (const s of G.pub) {
+    const d = NE.defOf(s.key);
     const dots = h('span', 'dots');
-    for (let i = 0; i < p.cap; i++) {
-      const d = h('i');
-      if (i < occ.length) d.style.background = COLORS[occ[i]];
-      dots.append(d);
+    if (s.cap > 9) dots.append(h('small', null, `${s.occ.length} 人`));
+    else for (let i = 0; i < s.cap; i++) {
+      const dot = h('i');
+      if (i < s.occ.length) dot.style.background = COLORS[s.occ[i]];
+      dots.append(dot);
     }
-    const ok = legal.some((a) => a.kind === 'pub' && a.id === p.id);
-    const b = btn('', 'slot', () => clickPublic(p.id), !ok || !!ui);
-    b.append(h('b', null, p.name), h('small', null, p.desc), dots);
+    const sold = NE.BLD[s.key] ? '（売られた）' : '';
+    const b = btn('', 'slot', () => clickWork({ pub: s.uid }), !my || !!ui || !NE.canUse(G, { pub: s.uid }));
+    b.append(h('b', null, d.name + sold), h('small', null, NE.effText(d.e)), dots);
     pub.append(b);
   }
   kids.push(pub);
 
-  // 選択中のパネル
-  if (ui && mine()) kids.push(choicePanel(me));
+  if (my && G.phase === 'pick') kids.push(pickPanel());
+  else if (ui) kids.push(choicePanel(me));
+
+  // 自分の手札
+  const sel = ui ? ui.sel : [];
+  const hand = h('div', 'blds');
+  me.hand.forEach((c, i) => {
+    let ok = !!ui;
+    if (ui && ui.need && ui.need.build != null && (ui.build == null || ui.build === i)) ok = c !== 'g' && NE.buildCost(c, ui.need.build) <= me.hand.length - 1;
+    else if (ui && ui.need && ui.need.build != null && ui.build != null) ok = i !== ui.build;
+    const b = btn('', 'bld card', () => tapCard(i, me), !ok);
+    b.classList.toggle('sel', sel.includes(i));
+    b.classList.toggle('build', ui && ui.build === i);
+    b.classList.toggle('goods', c === 'g');
+    b.append(h('b', null, NE.cardName(c)), h('small', null, cardInfo(c)));
+    hand.append(b);
+  });
+  kids.push(h('section', 'player', null, [h('div', 'ph', null, [h('b', null, `手札 ${me.hand.length} 枚（上限 ${NE.handLimit(me)}）`)]), hand]));
 
   // プレイヤー
   G.players.forEach((p, i) => {
     const bs = h('div', 'blds');
     p.bld.forEach((b, idx) => {
-      const d = NE.BUILDINGS[b.id];
-      const ok = legal.some((a) => a.kind === 'own' && a.idx === idx);
-      const c = btn('', 'bld', () => place({ kind: 'own', idx }), !p.human || !ok || !!ui);
+      const d = NE.BLD[b.key];
+      const ok = p.human && my && !ui && NE.canUse(G, { own: idx });
+      const c = btn('', 'bld', () => clickWork({ own: idx }), !ok);
       c.classList.toggle('used', b.used);
-      c.append(h('b', null, d.name), h('small', null, `${needText(d.in) || '無料'} → ${needText(d.out) || ''}${d.money ? `お金${d.money}` : ''}`));
+      c.append(h('b', null, d.name), h('small', null, `価値${d.value}　${NE.effText(d.e)}${d.p ? '（常時）' : ''}`));
       bs.append(c);
     });
     if (!p.bld.length) bs.append(h('small', 'muted', '建物なし'));
     const box = h('section', 'player', null, [
       h('div', 'ph', null, [
-        h('b', null, p.name + (i === G.turn && !G.over ? ' ◀' : '')),
+        h('b', null, p.name + (i === G.actor && !G.over ? ' ◀' : '') + (i === G.start ? '（スタート）' : '')),
         h('span', null, `点 ${NE.score(p)}`),
       ]),
-      h('div', 'stats', `現金 ${p.cash}　負債 ${p.loans}　労働者 ${p.free}/${p.workers}${p.hired ? `（+${p.hired}）` : ''}${p.passed ? '　パス' : ''}`),
-      h('div', 'stats', `手札: ${handText(p.hand)}`),
+      h('div', 'stats', `現金 ${p.cash}　負債 ${p.debt}　労働者 ${p.free}/${p.workers}${p.hired ? `（+${p.hired}）` : ''}　手札 ${p.hand.length}`),
       bs,
     ]);
     box.style.borderColor = COLORS[i];
     kids.push(box);
   });
 
-  if (mine() && !ui) kids.push(btn('パス（残りの労働者を使わない）', 'pill', () => place({ kind: 'pass' })));
   kids.push(h('div', 'log', G.log.slice(-6).join('\n')));
   if (G.over) kids.push(overPanel());
   stage.replaceChildren(...kids);
 
-  if (!G.over && !mine()) timer = setTimeout(() => { NE.apply(G, NE.cpuPick(G)); render(); }, 650);
+  if (!G.over && !my) timer = setTimeout(() => { NE.apply(G, NE.cpuAct(G)); render(); }, 650);
 }
 
 function choicePanel(me) {
-  if (ui.mode === 'sell') {
-    const s = ui.sell, total = NE.KINDS.reduce((t, k) => t + s[k], 0);
-    const row = h('div', 'row');
-    for (const k of NE.KINDS) {
-      row.append(h('div', 'cnt', null, [
-        h('div', null, `${NE.GOODS[k].name}（${NE.GOODS[k].price}）`),
-        h('div', 'row', null, [
-          btn('−', 'step', () => { s[k]--; render(); }, s[k] <= 0),
-          h('b', null, `${s[k]}/${me.hand[k]}`),
-          btn('＋', 'step', () => { s[k]++; render(); }, s[k] >= me.hand[k] || total >= NE.MAX_SELL),
-        ]),
-      ]));
-    }
-    return h('section', 'choice', null, [
-      h('div', null, `売るカードを選ぶ（${NE.MAX_SELL} 枚まで）→ ${NE.worth(s)} 円`),
-      row,
-      h('div', 'row', null, [
-        btn('売る', 'big', () => place({ kind: 'pub', id: 'market', sell: { ...s } }), total < 1),
-        btn('やめる', 'pill', () => { ui = null; render(); }),
-      ]),
-    ]);
-  }
+  const n = want(me);
+  let msg;
+  if (ui.trim) msg = `手札が多い。捨てるカードを ${n} 枚選ぶ（${ui.sel.length}/${n}）`;
+  else if (ui.need.build != null && ui.build == null) msg = '建てる建物カードを手札から選ぶ';
+  else if (ui.need.build != null) msg = `${NE.cardName(me.hand[ui.build])} を建てる。捨てるカードを ${n} 枚選ぶ（${ui.sel.length}/${n}）`;
+  else msg = `捨てるカードを ${n} 枚選ぶ（${ui.sel.length}/${n}）`;
+  const go = () => (ui.trim ? act({ kind: 'trim', disc: ui.sel }) : act({ kind: 'place', ...ui.w, disc: ui.sel, build: ui.build == null ? undefined : ui.build }));
+  return h('section', 'choice', null, [
+    h('div', null, msg),
+    h('div', 'row', null, [
+      btn('決める', 'big', go, n == null || ui.sel.length !== n),
+      ui.trim ? h('span') : btn('やめる', 'pill', () => { ui = null; render(); }),
+    ]),
+  ]);
+}
+
+function pickPanel() {
   const list = h('div', 'blds');
-  for (const [id, d] of Object.entries(NE.BUILDINGS)) {
-    const ok = G.supply[id] > 0 && d.cost <= me.cash;
-    const c = btn('', 'bld', () => place({ kind: 'pub', id: 'build', b: id }), !ok);
-    c.append(h('b', null, `${d.name}（${d.cost}円）`), h('small', null, `価値${d.value}　${needText(d.in) || '無料'} → ${needText(d.out)}${d.money ? `お金${d.money}` : ''}　残${G.supply[id]}`));
-    list.append(c);
-  }
-  return h('section', 'choice', null, [h('div', null, '建てる建物を選ぶ'), list, btn('やめる', 'pill', () => { ui = null; render(); })]);
+  G.look.forEach((c, i) => {
+    const b = btn('', 'bld card', () => act({ kind: 'pick', i }));
+    b.classList.toggle('goods', c === 'g');
+    b.append(h('b', null, NE.cardName(c)), h('small', null, cardInfo(c)));
+    list.append(b);
+  });
+  return h('section', 'choice', null, [h('div', null, '山札の上から 1 枚取る（残りは捨て札）'), list]);
 }
 
 function overPanel() {
   const order = G.players.map((p, i) => ({ p, i, s: NE.score(p) })).sort((a, b) => b.s - a.s);
   return h('section', 'choice', null, [
     h('h2', null, order[0].p.human ? 'あなたの勝ち！' : `${order[0].p.name} の勝ち`),
-    ...order.map((o, r) => h('div', null, `${r + 1} 位 ${o.p.name}　${o.s} 点（建物 ${o.p.bld.length}・現金 ${o.p.cash}・負債 ${o.p.loans}）`)),
+    ...order.map((o, r) => h('div', null, `${r + 1} 位 ${o.p.name}　${o.s} 点（建物 ${o.p.bld.length}・現金 ${o.p.cash}・負債 ${o.p.debt}）`)),
     btn('もう一度', 'big', title),
   ]);
 }

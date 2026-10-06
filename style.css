@@ -62,7 +62,6 @@ button { font: inherit; color: inherit; }
 .row { display: flex; gap: 8px; align-items: center; justify-content: center; flex-wrap: wrap; }
 button.big { background: var(--accent); color: #222; border: 0; border-radius: 10px; padding: 12px 22px; font-weight: 700; min-height: 44px; cursor: pointer; }
 button.big:disabled, button:disabled { opacity: 0.4; }
-button.step { width: 44px; height: 44px; border-radius: 10px; border: 1px solid rgba(255,255,255,.2); background: rgba(255,255,255,.08); }
 .rules { text-align: left; font-size: 14px; color: var(--muted); }
 .info { font-size: 14px; }
 .public { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 6px; }
@@ -78,4 +77,8 @@ button.step { width: 44px; height: 44px; border-radius: 10px; border: 1px solid 
 .bld { min-width: 96px; }
 .bld.used { opacity: 0.5; }
 .log { white-space: pre-wrap; font-size: 12px; color: var(--muted); }
-.cnt { text-align: center; }
+.card { min-width: 110px; max-width: 150px; }
+.card.goods { opacity: .75; border-style: dashed; }
+.card.sel { background: rgba(255, 211, 92, .3); border-color: var(--accent); }
+.card.build { background: rgba(108, 198, 255, .3); border-color: #6cc6ff; }
+.card:disabled { opacity: .35; }
