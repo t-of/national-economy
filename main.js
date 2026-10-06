@@ -47,14 +47,14 @@ function btn(text, cls, fn, disabled) {
   b.addEventListener('click', fn);
   return b;
 }
-const cardInfo = (c) => (c === 'g' ? '建てられない。捨てて費用にする' : `費用${NE.BLD[c].cost} 価値${NE.BLD[c].value}${NE.BLD[c].nosell ? '（売れない）' : ''}　${NE.effText(NE.BLD[c].e)}`);
+const cardInfo = (c) => (c === 'g' ? '建てられない。捨てて費用にする' : `費用${NE.BLD[c].cost} 価値${NE.BLD[c].value}${NE.BLD[c].nosell ? '（売れない）' : ''}　${NE.text(c)}`);
 
 function title() {
   clearTimeout(timer);
   G = null; ui = null;
   stage.replaceChildren(h('div', 'title', null, [
     h('h2', null, 'ナショナルエコノミー風'),
-    h('p', 'muted', '手札の建物カードを、別の手札を捨てて建てる。9 ラウンド後、建物の資産価値＋現金−負債×3 で勝負。'),
+    h('p', 'muted', '手札の建物カードを、別の手札を捨てて建てる。9 ラウンド後、建物の資産価値＋現金−未払い賃金×3 で勝負。'),
     h('p', null, '人数を選んではじめる'),
     h('div', 'row', null, [2, 3, 4].map((n) => btn(`${n} 人`, 'big', () => start(n)))),
     h('details', 'rules', null, [h('summary', null, '遊び方'), h('div', null, null, [
@@ -125,7 +125,7 @@ function render() {
     }
     const sold = NE.BLD[s.key] ? '（売られた）' : '';
     const b = btn('', 'slot', () => clickWork({ pub: s.uid }), !my || !!ui || !NE.canUse(G, { pub: s.uid }));
-    b.append(h('b', null, d.name + sold), h('small', null, NE.effText(d.e)), dots);
+    b.append(h('b', null, d.name + sold), h('small', null, NE.text(s.key)), dots);
     pub.append(b);
   }
   kids.push(pub);
@@ -157,7 +157,7 @@ function render() {
       const ok = p.human && my && !ui && NE.canUse(G, { own: idx });
       const c = btn('', 'bld', () => clickWork({ own: idx }), !ok);
       c.classList.toggle('used', b.used);
-      c.append(h('b', null, d.name), h('small', null, `価値${d.value}　${NE.effText(d.e)}${d.p ? '（常時）' : ''}`));
+      c.append(h('b', null, d.name), h('small', null, `価値${d.value}　${NE.text(b.key)}`));
       bs.append(c);
     });
     if (!p.bld.length) bs.append(h('small', 'muted', '建物なし'));
