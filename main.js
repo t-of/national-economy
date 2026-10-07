@@ -351,13 +351,16 @@ function render() {
     hand.append(b);
   });
   const watch = !me.human;
+  // 観戦中は CPU が動くたびに描き直すので、押してから離すまでにボタンが入れ替わり click が来ない。押した瞬間に効かせる（click はキーボード用に残す）
+  const now = (b, fn) => { b.addEventListener('pointerdown', fn); return b; };
   if (watch && !G.over) side.push(h('div', 'row', null, [
     ...SPEEDS.map(([, name], i) => {
-      const b = btn(name, 'pill', () => { speed = i; save('speed', i); render(); });
+      const set = () => { speed = i; save('speed', i); render(); };
+      const b = now(btn(name, 'pill', set), set);
       b.setAttribute('aria-pressed', String(i === speed));
       return b;
     }),
-    btn('観戦をやめる', 'pill', title),
+    now(btn('観戦をやめる', 'pill', title), title),
   ]));
   if (!watch) kids.push(h('section', 'player hand', null, [h('div', 'ph', null, [h('b', null, `手札 ${me.hand.length} 枚（上限 ${NE.handLimit(me)}）`)]), hand]));
 
