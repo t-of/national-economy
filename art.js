@@ -1144,4 +1144,156 @@ const ART = {
 <path d="M184 60l26-34 26 34z" fill="#3a3a3a"/>
 <path d="M202 84v24M218 84v24" fill="none" stroke="#fbf9f4" stroke-width="4"/>
 `,
+  ruins: `
+<rect width="280" height="168" fill="#d9d9d4" stroke="none"/>
+<circle cx="224" cy="34" r="16" fill="#fbf9f4"/>
+<rect x="-2" y="140" width="284" height="30" fill="#8f8f8a"/>
+<path d="M40 140V70h22v70zM100 140V54h22v86zM160 140V90h22v50z" fill="#fbf9f4"/>
+<path d="M34 70h34v-8H34zM94 54h34v-8H94z" fill="#fbf9f4"/>
+<path d="M100 54h74l-10 14 10 12" fill="#8f8f8a"/>
+<path d="M40 100h22M100 90h22M100 116h22" fill="none"/>
+<path d="M196 140l10-18 14 6 12-12 14 24z" fill="#3a3a3a"/>
+<path d="M170 140l6-10h14l6 10z" fill="#fbf9f4"/>
+<circle cx="146" cy="130" r="7" fill="#3a3a3a"/>
+<path d="M140 124l12 12M152 124l-12 12" fill="none" stroke="#fbf9f4"/>
+`,
+  g_relic: `
+<rect width="280" height="168" fill="#efe9da" stroke="none"/>
+<path d="M-2 130Q140 112 282 128v42H-2z" fill="#a69b7e"/>
+<path d="M140 22l8 28 28 8-28 8-8 28-8-28-28-8 28-8z" fill="#fbf9f4" stroke="none"/>
+<path d="M84 142l8-34h96l8 34z" fill="#3a3a3a"/>
+<path d="M104 108c-6-20 4-36 36-36s42 16 36 36z" fill="#d9d2c0"/>
+<path d="M140 72v-8M120 74l-8-8M160 74l8-8" fill="none"/>
+<circle cx="140" cy="94" r="12" fill="#f2c230"/>
+<path d="M134 94h12M140 88v12" fill="none" stroke-width="1.5"/>
+<path d="M70 142h140" fill="none" stroke-width="3"/>
+<circle cx="52" cy="112" r="3" fill="#fbf9f4"/><circle cx="234" cy="96" r="3" fill="#fbf9f4"/>
+<path d="M44 150l8-8 8 8M224 152l8-8 8 8" fill="none"/>
+`,
+  g_village: `
+<rect width="280" height="168" fill="#fbe7a1" stroke="none"/>
+<circle cx="224" cy="38" r="18" fill="#f2c230"/>
+<path d="M-2 110Q140 94 282 108v62H-2z" fill="#e0b02a"/>
+<path d="M-2 140l284-8v38H-2z" fill="#f2c230"/>
+<path d="M50 112V84l26-22 26 22v28z" fill="#fbf9f4"/>
+<path d="M44 86l32-26 32 26z" fill="#c7951a"/>
+<rect x="68" y="94" width="16" height="18" fill="#c7951a"/>
+<path d="M120 112V90l20-18 20 18v22z" fill="#fbf9f4"/>
+<path d="M114 92l26-22 26 22z" fill="#1d1d1d"/>
+<rect x="134" y="98" width="12" height="14" fill="#c7951a"/>
+<path d="M190 112V94l16-14 16 14v18z" fill="#fbf9f4"/>
+<path d="M186 96l20-18 20 18z" fill="#c7951a"/>
+<path d="M30 160l30-14M90 160l24-14M150 160l10-14M210 160l-8-14M260 160l-26-14" fill="none" stroke="#c7951a" stroke-width="3"/>
+<circle cx="170" cy="130" r="5" fill="#fbf9f4"/><circle cx="184" cy="132" r="5" fill="#fbf9f4"/>
+`,
+  g_colony: `
+<rect width="280" height="168" fill="#efe9da" stroke="none"/>
+<rect x="-2" y="124" width="284" height="46" fill="#a69b7e"/>
+<path d="M-2 124l284-4" fill="none"/>
+<path d="M60 124V60" fill="none" stroke-width="3"/>
+<path d="M60 60l50 10-50 14z" fill="#c63d2a"/>
+<path d="M92 124V90l24-18 24 18v34z" fill="#fbf9f4"/>
+<path d="M86 92l30-24 30 24z" fill="#3a3a3a"/>
+<rect x="108" y="102" width="16" height="22" fill="#a69b7e"/>
+<path d="M168 124V96l22-16 22 16v28z" fill="#d9d2c0"/>
+<path d="M162 98l28-20 28 20z" fill="#3a3a3a"/>
+<path d="M30 124l10-26 10 26z" fill="#fbf9f4"/>
+<path d="M40 98v26M20 124l20-26 20 26" fill="none"/>
+<path d="M236 124V84M226 90l10-8 10 8M228 124l8-10 8 10" fill="none"/>
+<circle cx="236" cy="76" r="9" fill="#fbf9f4"/>
+<path d="M232 76h8" fill="none" stroke-width="1.5"/>
+<circle cx="76" cy="144" r="4" fill="#fbf9f4"/><circle cx="96" cy="146" r="4" fill="#fbf9f4"/><circle cx="116" cy="144" r="4" fill="#fbf9f4"/>
+`,
+  g_atelier: `
+<rect width="280" height="168" fill="#c9d8f0" stroke="none"/>
+<rect x="-2" y="144" width="284" height="26" fill="#163a75"/>
+<rect x="30" y="44" width="220" height="100" fill="#fbf9f4"/>
+<path d="M22 44l30-22h176l30 22z" fill="#2456a6"/>
+<rect x="46" y="62" width="50" height="40" fill="#c9d8f0"/>
+<path d="M71 62v40M46 82h50" fill="none"/>
+<rect x="46" y="110" width="76" height="12" fill="#163a75"/>
+<path d="M56 110V98l14-4 8 16" fill="#2456a6"/>
+<circle cx="100" cy="102" r="6" fill="#fbf9f4"/>
+<path d="M150 144V76h30v68z" fill="#2456a6"/>
+<circle cx="165" cy="96" r="9" fill="#c9d8f0"/>
+<path d="M165 90v12M159 96h12" fill="none"/>
+<path d="M200 144V86h38v58z" fill="#d9d9d4"/>
+<path d="M208 86V70h22v16M206 144l12-30 12 30" fill="#8f8f8a"/>
+<path d="M214 100h10" fill="none"/>
+`,
+  g_steam: `
+<rect width="280" height="168" fill="#c9d8f0" stroke="none"/>
+<circle cx="70" cy="30" r="10" fill="#fbf9f4"/>
+<circle cx="90" cy="20" r="13" fill="#fbf9f4"/>
+<circle cx="116" cy="14" r="10" fill="#fbf9f4"/>
+<rect x="64" y="38" width="16" height="64" fill="#163a75"/>
+<rect x="60" y="34" width="24" height="8" fill="#1d1d1d"/>
+<rect x="-2" y="152" width="284" height="18" fill="#163a75"/>
+<rect x="30" y="96" width="120" height="56" fill="#2456a6"/>
+<path d="M30 96h120" fill="none"/>
+<circle cx="90" cy="124" r="22" fill="#fbf9f4"/>
+<circle cx="90" cy="124" r="22" fill="none" stroke="#163a75" stroke-width="5"/>
+<path d="M90 106v36M72 124h36M77 111l26 26M103 111l-26 26" fill="none"/>
+<circle cx="90" cy="124" r="6" fill="#163a75"/>
+<circle cx="190" cy="108" r="36" fill="#8f8f8a"/>
+<circle cx="190" cy="108" r="12" fill="#fbf9f4"/>
+<path d="M190 66v10M190 140v10M148 108h10M222 108h10M160 78l7 7M213 131l7 7M160 138l7-7M213 85l7-7" fill="none" stroke-width="6"/>
+<path d="M190 96v12l8 6" fill="none"/>
+<rect x="236" y="64" width="22" height="88" fill="#163a75"/>
+<path d="M236 84h22M236 104h22" fill="none" stroke="#c9d8f0"/>
+`,
+  g_chicken: `
+<rect width="280" height="168" fill="#fbe7a1" stroke="none"/>
+<circle cx="236" cy="34" r="18" fill="#f2c230"/>
+<path d="M-2 120Q140 104 282 118v52H-2z" fill="#e0b02a"/>
+<path d="M-2 146l284-8v32H-2z" fill="#f2c230"/>
+<rect x="30" y="64" width="86" height="56" fill="#fbf9f4"/>
+<path d="M22 66l51-34 51 34z" fill="#c7951a"/>
+<path d="M60 120V92a13 13 0 0 1 26 0v28z" fill="#1d1d1d"/>
+<circle cx="73" cy="52" r="6" fill="#fbf9f4"/>
+<path d="M146 148c-16 0-26-12-24-26 2-10 10-14 18-14 2-12 18-14 22-4 6-4 14 0 12 8 8 6 10 18 2 26-6 6-16 10-30 10z" fill="#fbf9f4"/>
+<path d="M162 104c-2-8 4-12 8-8 2-8 12-6 10 2" fill="#c63d2a"/>
+<path d="M182 112l12 4-12 4z" fill="#f2c230"/>
+<circle cx="174" cy="112" r="2" fill="#1d1d1d"/>
+<path d="M134 132c10 8 22 6 28-6" fill="none"/>
+<path d="M148 148v10M162 148v10M142 158h12M156 158h12" fill="none" stroke-width="3"/>
+<ellipse cx="226" cy="150" rx="9" ry="12" fill="#fbf9f4"/>
+<ellipse cx="248" cy="154" rx="9" ry="12" fill="#fbf9f4"/>
+`,
+  g_sky: `
+<rect width="280" height="168" fill="#efe9da" stroke="none"/>
+<circle cx="220" cy="40" r="12" fill="#fbf9f4"/>
+<rect x="-2" y="152" width="284" height="18" fill="#a69b7e"/>
+<path d="M60 152V44h60v108z" fill="#d9d2c0"/>
+<path d="M60 74h60M60 104h60M60 130h60M90 44v108" fill="none"/>
+<path d="M60 44l30-16 30 16z" fill="#3a3a3a"/>
+<path d="M90 28V14" fill="none" stroke-width="3"/>
+<path d="M160 152V92h50v60z" fill="#fbf9f4"/>
+<path d="M160 116h50M160 134h50M185 92v60" fill="none"/>
+<path d="M156 92h58l-8-10h-42z" fill="#3a3a3a"/>
+<path d="M130 152V30M130 30h110M130 30l30 22M240 30v22" fill="none" stroke-width="3"/>
+<path d="M240 52v26" fill="none"/>
+<rect x="228" y="78" width="24" height="12" fill="#3a3a3a"/>
+<path d="M130 40h24M130 52h24" fill="none"/>
+<path d="M130 152h-8M232 152h-10" fill="none"/>
+`,
+  g_cafe: `
+<rect width="280" height="168" fill="#efe9da" stroke="none"/>
+<rect x="-2" y="152" width="284" height="18" fill="#a69b7e"/>
+<rect x="30" y="52" width="130" height="100" fill="#fbf9f4"/>
+<path d="M22 52h146l-14-24H36z" fill="#3a3a3a"/>
+<path d="M48 40h34v10H48z" fill="#fbf9f4" stroke-width="1.5"/>
+<rect x="46" y="68" width="62" height="42" fill="#d9d2c0"/>
+<path d="M77 68v42" fill="none"/>
+<path d="M120 152V96h28v56z" fill="#3a3a3a"/>
+<path d="M60 84h18M60 94h18" fill="none" stroke-width="1.5"/>
+<path d="M186 152v-34M246 152v-34" fill="none" stroke-width="3"/>
+<rect x="176" y="106" width="80" height="12" fill="#a69b7e"/>
+<path d="M196 106l8-18h24l8 18z" fill="#fbf9f4"/>
+<rect x="198" y="88" width="14" height="14" fill="#fbf9f4"/>
+<rect x="214" y="78" width="14" height="14" fill="#1d1d1d"/>
+<circle cx="205" cy="95" r="2" fill="#1d1d1d"/><circle cx="221" cy="85" r="2" fill="#fbf9f4"/>
+<rect x="232" y="94" width="14" height="12" fill="#2456a6"/>
+<rect x="172" y="140" width="16" height="12" fill="#a69b7e"/>
+`,
 };
