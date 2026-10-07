@@ -716,4 +716,138 @@ const ART = {
 <rect x="242" y="50" width="16" height="28" fill="#3a3a3a"/>
 <rect x="246" y="56" width="8" height="8" fill="#d9d9d4"/>
 `,
+  m_garden: `
+<rect width="280" height="168" fill="#fbe7a1" stroke="none"/>
+<circle cx="236" cy="34" r="18" fill="#f2c230"/>
+<rect x="-2" y="104" width="284" height="66" fill="#e0b02a"/>
+<path d="M-2 124h284M-2 144h284" fill="none" stroke="#c7951a" stroke-width="3"/>
+<path d="M30 124V96M30 110c-12-4-14-14-12-20 10 2 14 10 12 20zM30 106c12-4 14-14 12-20-10 2-14 10-12 20z" fill="#fbf9f4"/>
+<circle cx="86" cy="116" r="14" fill="#c63d2a"/>
+<path d="M86 102c0-8 6-12 10-12" fill="none"/>
+<path d="M120 100l14 40 14-40z" fill="#f2c230"/>
+<path d="M126 100c-4-14 2-18 8-18s12 4 8 18" fill="#fbf9f4"/>
+<path d="M176 100h40l-6 38h-28z" fill="#c7951a"/>
+<path d="M184 100c0-18 8-26 12-26s12 8 12 26" fill="#fbf9f4"/>
+<path d="M196 100V76M240 140V110M240 128c-10-2-12-12-10-18 10 2 12 8 10 18z" fill="none"/>
+`,
+  m_potato: `
+<rect width="280" height="168" fill="#fbe7a1" stroke="none"/>
+<circle cx="50" cy="36" r="18" fill="#f2c230"/>
+<rect x="-2" y="96" width="284" height="74" fill="#c7951a"/>
+<path d="M-2 116Q70 100 140 116T282 112M-2 140Q70 124 140 140T282 136" fill="none" stroke="#e0b02a" stroke-width="5"/>
+<path d="M60 104c0-26-14-34-24-34 4 14 12 24 24 34zM60 104c4-22 18-30 28-28-6 12-16 22-28 28z" fill="#fbf9f4"/>
+<path d="M200 104c0-26-14-34-24-34 4 14 12 24 24 34zM200 104c4-22 18-30 28-28-6 12-16 22-28 28z" fill="#fbf9f4"/>
+<ellipse cx="120" cy="140" rx="30" ry="18" fill="#f2c230"/>
+<ellipse cx="190" cy="148" rx="24" ry="14" fill="#f2c230"/>
+<ellipse cx="238" cy="140" rx="22" ry="13" fill="#f2c230"/>
+<path d="M110 134h.1M126 144h.1M184 144h.1M196 152h.1M232 136h.1M244 144h.1" fill="none" stroke-width="4" stroke-linecap="round"/>
+`,
+  m_grave: `
+<rect width="280" height="168" fill="#d9d9d4" stroke="none"/>
+<circle cx="214" cy="40" r="20" fill="#fbf9f4"/>
+<rect x="-2" y="132" width="284" height="38" fill="#8f8f8a"/>
+<path d="M44 132V86a22 22 0 0 1 44 0v46z" fill="#fbf9f4"/>
+<path d="M66 80v32M54 92h24" fill="none"/>
+<path d="M116 132V70h36v62z" fill="#3a3a3a"/>
+<path d="M116 70l18-14 18 14z" fill="#8f8f8a"/>
+<path d="M134 82v26" fill="none" stroke="#fbf9f4"/>
+<path d="M182 132V100a20 20 0 0 1 40 0v32z" fill="#8f8f8a"/>
+<path d="M192 132v-30M212 132v-30" fill="none" stroke="#fbf9f4"/>
+<rect x="30" y="126" width="220" height="8" fill="#3a3a3a"/>
+<path d="M248 132V92M248 104h-14M248 96h12" fill="none"/>
+`,
+  m_carp: `
+<rect width="280" height="168" fill="#d9d9d4" stroke="none"/>
+<rect x="-2" y="140" width="284" height="30" fill="#8f8f8a"/>
+<path d="M40 140V96h200v44z" fill="#fbf9f4"/>
+<path d="M70 140V96M110 140V96M170 140V96M210 140V96" fill="none"/>
+<rect x="124" y="110" width="32" height="30" fill="#3a3a3a"/>
+<path d="M14 98Q70 90 100 62L140 38l40 24q30 28 86 36z" fill="#3a3a3a"/>
+<path d="M140 38v-12M132 26h16" fill="none"/>
+<path d="M30 96q14-4 24-12M250 96q-14-4-24-12" fill="none" stroke="#fbf9f4"/>
+<rect x="30" y="96" width="220" height="8" fill="#8f8f8a"/>
+<path d="M120 62h40M126 74h28" fill="none" stroke="#fbf9f4"/>
+`,
+  m_lottery: `
+<rect width="280" height="168" fill="#d9d9d4" stroke="none"/>
+<circle cx="110" cy="84" r="52" fill="#fbf9f4"/>
+<circle cx="110" cy="84" r="52" fill="none" stroke="#3a3a3a" stroke-width="6" stroke-dasharray="10 8"/>
+<path d="M110 32v104M58 84h104" fill="none" stroke="#8f8f8a"/>
+<circle cx="86" cy="64" r="11" fill="#3a3a3a"/>
+<circle cx="136" cy="104" r="11" fill="#8f8f8a"/>
+<circle cx="130" cy="62" r="8" fill="#8f8f8a"/>
+<path d="M110 136l-20 24h40z" fill="#3a3a3a"/>
+<rect x="196" y="48" width="64" height="92" fill="#fbf9f4" transform="rotate(8 228 94)"/>
+<path d="M204 72h48M204 90h48M204 108h30" fill="none" transform="rotate(8 228 94)"/>
+<rect x="204" y="54" width="48" height="12" fill="#3a3a3a" transform="rotate(8 228 94)"/>
+<circle cx="236" cy="124" r="10" fill="#8f8f8a"/>
+<path d="M232 124h8" fill="none"/>
+`,
+  m_foodf: `
+<rect width="280" height="168" fill="#c9d8f0" stroke="none"/>
+<circle cx="60" cy="30" r="10" fill="#fbf9f4"/>
+<circle cx="78" cy="20" r="12" fill="#fbf9f4"/>
+<rect x="50" y="36" width="16" height="50" fill="#163a75"/>
+<path d="M20 152V96h110v56z" fill="#2456a6"/>
+<rect x="34" y="108" width="20" height="14" fill="#c9d8f0"/>
+<rect x="68" y="108" width="20" height="14" fill="#c9d8f0"/>
+<rect x="150" y="104" width="100" height="14" fill="#163a75"/>
+<path d="M164 104V90h26v14M200 104V94h26v10" fill="#fbf9f4"/>
+<path d="M164 90h26M200 94h26" fill="none"/>
+<rect x="156" y="118" width="88" height="8" fill="#2456a6"/>
+<circle cx="168" cy="136" r="9" fill="#fbf9f4"/>
+<circle cx="200" cy="136" r="9" fill="#fbf9f4"/>
+<circle cx="232" cy="136" r="9" fill="#fbf9f4"/>
+<path d="M168 130v12M200 130v12M232 130v12" fill="none"/>
+<rect x="-2" y="152" width="284" height="18" fill="#163a75"/>
+`,
+  m_fish: `
+<rect width="280" height="168" fill="#fbe7a1" stroke="none"/>
+<circle cx="236" cy="30" r="16" fill="#f2c230"/>
+<rect x="-2" y="70" width="284" height="100" fill="#e0b02a"/>
+<path d="M-2 90q20-8 40 0t40 0 40 0 40 0 40 0 40 0 40 0" fill="none" stroke="#fbf9f4" stroke-width="3"/>
+<rect x="30" y="64" width="220" height="86" fill="#f2c230"/>
+<rect x="44" y="78" width="192" height="60" fill="#c7951a"/>
+<path d="M60 100c14-14 34-14 48 0-14 14-34 14-48 0zM108 100l14-10v20z" fill="#fbf9f4"/>
+<circle cx="72" cy="97" r="2.5" fill="#1d1d1d"/>
+<path d="M150 118c12-12 30-12 42 0-12 12-30 12-42 0zM192 118l12-9v18z" fill="#fbf9f4"/>
+<circle cx="161" cy="115" r="2.5" fill="#1d1d1d"/>
+<path d="M200 90a6 6 0 1 0 .1 0" fill="none" stroke="#fbf9f4"/>
+<path d="M30 64v-8M90 64v-8M150 64v-8M210 64v-8" fill="none"/>
+`,
+  m_lab: `
+<rect width="280" height="168" fill="#d9d9d4" stroke="none"/>
+<rect x="-2" y="136" width="284" height="34" fill="#8f8f8a"/>
+<rect x="20" y="124" width="240" height="12" fill="#3a3a3a"/>
+<path d="M70 124V84l-24-36V36h56v12L78 84v40z" fill="#fbf9f4"/>
+<path d="M54 56h40" fill="none"/>
+<path d="M56 62h36l-8 24-6 38H70z" fill="#8f8f8a" stroke="none"/>
+<path d="M40 124h60l-22-48z" fill="#3a3a3a"/>
+<path d="M150 124V70h50v54z" fill="#fbf9f4"/>
+<path d="M150 98h50" fill="none"/>
+<circle cx="175" cy="84" r="9" fill="#8f8f8a"/>
+<path d="M175 70V58M168 58h14" fill="none"/>
+<path d="M222 124l8-44h24l8 44z" fill="#fbf9f4"/>
+<path d="M226 100h32" fill="none"/>
+<path d="M226 100h32l-3 24h-26z" fill="#3a3a3a"/>
+<circle cx="150" cy="40" r="6" fill="#fbf9f4"/>
+<circle cx="170" cy="28" r="4" fill="#fbf9f4"/>
+<circle cx="190" cy="40" r="5" fill="#fbf9f4"/>
+`,
+  m_iron: `
+<rect width="280" height="168" fill="#c9d8f0" stroke="none"/>
+<rect x="-2" y="140" width="284" height="30" fill="#163a75"/>
+<path d="M30 140v-50l30-14 30 14v50z" fill="#2456a6"/>
+<path d="M40 100h40" fill="none" stroke="#c9d8f0"/>
+<ellipse cx="60" cy="100" rx="14" ry="8" fill="#f3cfc7"/>
+<path d="M126 140l16-40h92l16 40z" fill="#163a75"/>
+<rect x="118" y="86" width="140" height="14" fill="#2456a6"/>
+<path d="M150 86l12-24h50l12 24z" fill="#fbf9f4"/>
+<path d="M162 62h50" fill="none"/>
+<path d="M170 52l10-14 8 10 8-18 8 22" fill="none" stroke="#f3cfc7" stroke-width="3"/>
+<circle cx="176" cy="46" r="3" fill="#fbf9f4"/>
+<path d="M104 140v-24h-20v24" fill="#2456a6"/>
+<rect x="190" y="126" width="40" height="14" fill="#fbf9f4"/>
+<path d="M196 126l10-4h18l6 4" fill="#c9d8f0"/>
+`,
 };
