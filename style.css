@@ -174,6 +174,7 @@ button.big:disabled, button:disabled { opacity: 0.4; }
 .public { order: 2; }
 .choice { order: 3; }
 .hand { order: 4; }
+.hand-row { order: 4; display: flex; flex-direction: column; gap: 10px; }
 .col-side > .player, .log { order: 5; }
 
 /* PC: 画面いっぱいに 2 列。ページはスクロールさせず、あふれたら列の中だけスクロール */
@@ -186,6 +187,8 @@ button.big:disabled, button:disabled { opacity: 0.4; }
   .stage.game .col-main, .stage.game .col-side { display: flex; flex-direction: column; gap: 10px; min-height: 0; }
   .stage.game .public { flex: 1; min-height: 0; overflow-y: auto; align-content: flex-start; }
   .stage.game .col-side { overflow-y: auto; padding-right: 2px; }
+  .stage.game .hand-row { flex-direction: row; }
+  .stage.game .hand-row > .hand { flex: 1; min-width: 0; }
   .stage.game .hand .blds { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; }
   .stage.game .card:not(.mini) { width: var(--cw); flex: none; }
   .stage.game .hand .card { width: min(var(--cw), 110px); }

@@ -364,7 +364,20 @@ function render() {
     }),
     now(btn('観戦をやめる', 'pill', title), title),
   ]));
-  if (!watch) kids.push(h('section', 'player hand', null, [h('div', 'ph', null, [h('b', null, `手札 ${me.hand.length} 枚（上限 ${NE.handLimit(me)}）`)]), hand]));
+  const handSec = h('section', 'player hand', null, [h('div', 'ph', null, [h('b', null, `手札 ${me.hand.length} 枚（上限 ${NE.handLimit(me)}）`)]), hand]);
+  // 自分の番は、自分の建物を手札と同じ大きさで手札の上（PC では隣）に出す
+  if (my) {
+    const bs = h('div', 'blds');
+    me.bld.forEach((b, idx) => {
+      const ok = !ui && NE.canUse(G, { own: idx });
+      const c = miniCard(b.key, () => clickWork({ own: idx }), !ok, NE.BLD[b.key].name, [null], true);
+      if (b.used) c.querySelector('.pc-art').append(h('span', 'pc-on', null, [meeple(COLORS[0])]));
+      c.classList.toggle('dim', !ui && !ok);
+      bs.append(c);
+    });
+    if (!me.bld.length) bs.append(h('small', 'muted', '建物なし'));
+    kids.push(h('div', 'hand-row', null, [h('section', 'player hand', null, [h('div', 'ph', null, [h('b', null, `あなたの建物 ${me.bld.length}`)]), bs]), handSec]));
+  } else if (!watch) kids.push(handSec);
 
   // プレイヤー
   G.players.forEach((p, i) => {
@@ -392,7 +405,7 @@ function render() {
         ]),
         chip('deck', '手札', p.hand.length),
       ]),
-      bs,
+      ...(my && i === 0 ? [] : [bs]),
     ]);
     box.style.borderColor = COLORS[i];
     side.push(box);
