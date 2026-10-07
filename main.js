@@ -116,7 +116,7 @@ function btn(text, cls, fn, disabled) {
   b.addEventListener('click', fn);
   return b;
 }
-const cardInfo = (c) => (c === 'g' ? '建てられない。捨てて費用にする' : `費用${NE.BLD[c].cost} 価値${NE.BLD[c].value}${NE.BLD[c].nosell ? '（売れない）' : ''}　${NE.text(c)}`);
+const cardInfo = (c) => (c === 'g' ? '建てられない。捨てて費用にする' : `費用${NE.BLD[c].cost}${NE.BLD[c].costText ? `（${NE.BLD[c].costText}）` : ''} 価値${NE.BLD[c].value}${NE.BLD[c].nosell ? '（売れない）' : ''}　${NE.text(c)}`);
 
 // 工業ポスター風のカード。種類で色とアイコンが決まる。狭い画面では CSS が効果の文を隠す（全文は title に入れてある）
 const KIND = {
@@ -175,7 +175,8 @@ const pad2 = (n) => String(n + 1).padStart(2, '0');
 function face(b, key, dots) {
   const g = key === 'g', d = g ? null : NE.BLD[key], p = !g && !d ? NE.PUB[key] : null;
   const k = KIND[g ? 'g' : p ? 'pub' : d.fac ? 'fac' : d.cat || 'shop'];
-  const [cl, cv] = p ? ['定員', p.cap > 9 ? '∞' : p.cap || 1] : g ? ['費用', '―'] : ['費用', d.cost];
+  const now = d && G ? NE.buildCost(key, 0, G.players[0]) : null; // 自分の今の費用（割引があれば「4→2」）
+  const [cl, cv] = p ? ['定員', p.cap > 9 ? '∞' : p.cap || 1] : g ? ['費用', '―'] : ['費用', now != null && now !== d.cost ? `${d.cost}→${now}` : d.cost];
   const nm = h('span', 'pc-nm', p ? p.name : NE.cardName(key));
   nm.style.setProperty('--fs', 53 / [...nm.textContent].length + 'cqw'); // 名前は 1 行。長いと字を小さくする
   const ib = h('span', 'pc-ib', null, [icon(p ? PUB_ICON[key] || k[3] : k[3])]);
@@ -229,8 +230,8 @@ function posterCard(c, cls, fn, disabled) {
   return face(b, c);
 }
 
-// 作品: p 無印 / m メセナ / g グローリー（m・g は準備中）
-const EDS = [['p', 'ナショナルエコノミー', true], ['m', 'メセナ', false], ['g', 'グローリー', false]];
+// 作品: p 無印 / m メセナ / g グローリー（g は準備中）
+const EDS = [['p', 'ナショナルエコノミー', true], ['m', 'メセナ', true], ['g', 'グローリー', false]];
 // 古い保存（ed なし）は 'p'。戦績は作品ごと（byEd）。古い平らな戦績 {games, wins} は無印のものとして読む
 let settings = load('settings', {});
 if (!EDS.some((e) => e[0] === settings.ed && e[2])) settings = { ...settings, ed: 'p' };
@@ -297,7 +298,7 @@ function clickWork(w) {
 // 選ぶ枚数（まだ建てる建物を選んでいなければ null）
 function want(me) {
   if (ui.trim) return me.hand.length - NE.handLimit(me);
-  if (ui.need.build != null) return ui.builds.length < (ui.need.build2 ? 2 : 1) ? null : NE.bcost(me, ui.need, me.hand[ui.builds[0]]);
+  if (ui.need.build != null) return ui.builds.length < (ui.need.build2 ? 2 : 1) ? null : NE.setCost(me, ui.need, ui.builds.map((x) => me.hand[x]));
   return ui.need.disc;
 }
 
@@ -327,6 +328,7 @@ function render() {
     ]),
     chip('coin', '家計', `$${G.house}`, '家計のお金。売ったり稼いだりするときここから受け取る'),
     chip('deck', '山札', G.deck.length, '建物の山札の残り'),
+    ...(G.ed !== 'p' ? [chip('vp', '勝利点 残り', G.vpLeft, '勝利点トークンの残り')] : []),
     turn,
   ]));
 
@@ -363,8 +365,10 @@ function render() {
     let ok = !!ui;
     const bn = ui && ui.need && ui.need.build != null;
     if (bn && (ui.builds.length < (ui.need.build2 ? 2 : 1) || ui.builds.includes(i))) {
-      ok = NE.canBuildCard(ui.need, c) && NE.bcost(me, ui.need, c) <= me.hand.length - (ui.need.build2 ? 2 : 1);
-      if (ok && ui.builds.length && !ui.builds.includes(i)) ok = NE.bcost(me, ui.need, c) === NE.bcost(me, ui.need, me.hand[ui.builds[0]]); // 2 つ建ては同じ費用
+      const sum = ui.need.build2 === 'sum'; // 地球建設は費用の合計、二胡市建設は同じ費用
+      const first = ui.builds.length && !ui.builds.includes(i) ? NE.bcost(me, ui.need, me.hand[ui.builds[0]]) : 0;
+      ok = NE.canBuildCard(ui.need, c) && NE.bcost(me, ui.need, c) + (sum ? first : 0) <= me.hand.length - (ui.need.build2 ? 2 : 1);
+      if (ok && ui.builds.length && !ui.builds.includes(i) && !sum) ok = NE.bcost(me, ui.need, c) === first;
     } else if (bn) ok = !ui.builds.includes(i);
     const b = posterCard(c, '', () => tapCard(i, me), !ok);
     b.classList.toggle('dim', !!ui && !ok);
@@ -392,6 +396,7 @@ function render() {
       const ok = !ui && NE.canUse(G, { own: idx });
       const c = miniCard(b.key, () => clickWork({ own: idx }), !ok, NE.BLD[b.key].name, [null], true);
       if (b.used) c.querySelector('.pc-art').append(h('span', 'pc-on', null, [meeple(COLORS[0])]));
+      if (b.used && me.stash) c.querySelector('.pc-art').append(h('span', 'c-ns', `取り置き 消費財 ×${me.stash}`));
       c.classList.toggle('dim', !ui && !ok);
       bs.append(c);
     });
@@ -418,11 +423,13 @@ function render() {
       ]),
       h('div', 'stats', null, [
         chip('coin', '現金', `$${p.cash}`),
+        ...(G.ed !== 'p' ? [chip('vp', '勝利点', p.vp || 0, '3 枚ごとに 10 点、余りは 1 枚 1 点')] : []),
         ...(p.debt ? [chip('debt', '未払い賃金', p.debt, `1 枚 −${NE.penalty()} 点`)] : []),
         h('span', 'workers', null, [
           ...Array.from({ length: p.workers }, (_, j) => meeple(COLORS[i], j < p.free ? '' : 'used')),
           ...Array.from({ length: p.hired }, () => meeple(COLORS[i], 'temp')),
         ]),
+        ...(p.stash ? [chip('deck', '取り置き', p.stash, '醸造所の消費財。次のラウンドのはじめに手札へ入る')] : []),
         chip('deck', '手札', p.hand.length),
       ]),
       ...(my && i === 0 ? [] : [bs]),
@@ -490,6 +497,7 @@ function overPanel() {
   const rows = [
     ['建物の資産', (p) => p.bld.reduce((s, b) => s + NE.BLD[b.key].value, 0)],
     ['終了時の点', NE.endBonus],
+    ...(G.ed !== 'p' ? [['勝利点', NE.vpPts]] : []),
     ['現金', (p) => p.cash],
     [`未払い賃金 ×${NE.penalty()}`, (p) => -NE.unpaid(p) * NE.penalty()],
   ];
