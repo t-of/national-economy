@@ -84,10 +84,7 @@ function sfx(name) {
 function step(a) {
   const before = { round: G.round, cash: G.players.map((p) => p.cash), bld: G.players.map((p) => p.bld.length) };
   NE.apply(G, a);
-  if (G.over) {
-    const best = Math.max(...G.players.map(NE.score));
-    return sfx(G.players.some((p) => p.human) ? (G.players.some((p) => p.human && NE.score(p) === best) ? 'win' : 'lose') : 'win');
-  }
+  if (G.over) return; // 勝ち負けの音は、終わりの点数計算（overPanel）が最後に鳴らす
   if (G.players.some((p, i) => p.bld.length > before.bld[i])) return sfx('build');
   if (G.round !== before.round) return sfx('round');
   if (G.players.some((p, i) => p.cash > before.cash[i])) return sfx('coin');
@@ -394,7 +391,7 @@ function render() {
     const box = h('section', 'player', null, [
       h('div', 'ph', null, [
         h('b', null, p.name + (i === G.actor && !G.over ? ' ◀' : '') + (i === G.start ? '（スタート）' : '')),
-        chip('vp', '勝利点', NE.score(p), '建物の資産 + 終了時の点 + 現金 − 未払い賃金×3'),
+        // 勝利点はゲーム中は隠し、終わりの点数計算で見せる
       ]),
       h('div', 'stats', null, [
         chip('coin', '現金', `$${p.cash}`),
@@ -461,13 +458,59 @@ function pickPanel() {
   return h('section', 'choice', null, [h('div', null, '山札の上から 1 枚取る（残りは捨て札）'), list]);
 }
 
+// 終わりの点数計算。項目を 1 行ずつ足していき、合計の数字が増えていくのを見せる。
+// 描き直しても続きから進むよう、同じゲームの間は同じ要素を使い回す
+let over = null;
 function overPanel() {
-  const order = G.players.map((p, i) => ({ p, i, s: NE.score(p) })).sort((a, b) => b.s - a.s);
-  return h('section', 'choice', null, [
-    h('h2', null, order[0].p.human ? 'あなたの勝ち！' : `${order[0].p.name} の勝ち`),
-    ...order.map((o, r) => h('div', null, `${r + 1} 位 ${o.p.name}　${o.s} 点（建物 ${o.p.bld.length}・現金 ${o.p.cash}・負債 ${o.p.debt}）`)),
-    btn('もう一度', 'big', title),
-  ]);
+  if (over && over.g === G) return over.el;
+  const g = G, ps = G.players;
+  const rows = [
+    ['建物の資産', (p) => p.bld.reduce((s, b) => s + NE.BLD[b.key].value, 0)],
+    ['終了時の点', NE.endBonus],
+    ['現金', (p) => p.cash],
+    [`未払い賃金 ×${NE.penalty()}`, (p) => -NE.unpaid(p) * NE.penalty()],
+  ];
+  const tot = ps.map(() => 0);
+  const totEl = ps.map(() => h('b', 'sc-tot', '0'));
+  const head = h('h2', null, '点数計算');
+  const tbl = h('div', 'score', null, [h('span', 'sc-k'), ...ps.map((p, i) => { const n = h('b', null, p.name); n.style.color = COLORS[i]; return n; })]);
+  const foot = h('div', 'row');
+  const sum = h('div', 'score', null, [h('span', 'sc-k', '合計'), ...totEl]);
+  for (const t of [tbl, sum]) t.style.setProperty('--n', ps.length);
+  const el = h('section', 'choice over', null, [head, tbl, sum, foot]);
+  over = { g, el };
+  // 数字を少しずつ数え上げる
+  const count = (i, to) => {
+    const from = tot[i], t0 = performance.now();
+    tot[i] = to;
+    const tick = (t) => {
+      const k = Math.min(1, (t - t0) / 500);
+      totEl[i].textContent = Math.round(from + (to - from) * k);
+      if (k < 1 && over && over.g === g) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  };
+  let r = 0;
+  const next = () => {
+    if (!over || over.g !== g) return; // タイトルに戻った
+    if (r < rows.length) {
+      const [name, f] = rows[r++];
+      const vs = ps.map(f);
+      tbl.append(h('span', 'sc-k', name), ...vs.map((v) => h('span', 'sc-v', v > 0 ? `+${v}` : String(v))));
+      vs.forEach((v, i) => count(i, tot[i] + v));
+      sfx(vs.some((v) => v < 0) ? 'wage' : 'coin');
+      return setTimeout(next, 1100);
+    }
+    const order = ps.map((p, i) => ({ p, i, s: NE.score(p) })).sort((a, b) => b.s - a.s);
+    const best = order[0].s;
+    ps.forEach((p, i) => totEl[i].classList.toggle('best', NE.score(p) === best));
+    head.textContent = order[0].p.human ? 'あなたの勝ち！' : `${order[0].p.name} の勝ち`;
+    foot.replaceChildren(...order.map((o, k) => h('div', null, `${k + 1} 位 ${o.p.name}　${o.s} 点`)), btn('もう一度', 'big', title));
+    foot.classList.replace('row', 'ranks');
+    sfx(ps.some((p) => p.human) ? (ps.some((p) => p.human && NE.score(p) === best) ? 'win' : 'lose') : 'win');
+  };
+  setTimeout(next, 700);
+  return el;
 }
 
 title();

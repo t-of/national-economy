@@ -68,6 +68,15 @@ button.big:disabled, button:disabled { opacity: 0.4; }
 .dots .mp { width: 18px; height: 18px; }
 .player, .choice { border: 2px solid; border-radius: 12px; padding: 8px; display: flex; flex-direction: column; gap: 4px; background: rgba(0,0,0,.18); }
 .choice { border-color: var(--accent); gap: 8px; }
+/* 終わりの点数計算の表（左に項目、右に人数分の列） */
+.score { display: grid; grid-template-columns: auto repeat(var(--n), minmax(0, 1fr)); gap: 4px 10px; align-items: baseline; font-size: 14px; }
+.score > * { text-align: right; }
+.score > .sc-k { text-align: left; }
+.sc-v { animation: sc-in .3s ease-out; }
+@keyframes sc-in { from { opacity: 0; transform: translateY(-4px); } }
+.sc-tot { font-size: 22px; }
+.sc-tot.best { color: var(--accent); }
+.ranks { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
 .ph { display: flex; justify-content: space-between; }
 .stats { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .blds { display: flex; flex-wrap: wrap; gap: 6px; }
