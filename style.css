@@ -159,6 +159,9 @@ button.big:disabled, button:disabled { opacity: 0.4; }
 .pc-dots { position: absolute; left: 1.5cqw; bottom: 1.5cqw; padding: 1cqw 1.5cqw; background: rgba(251, 249, 244, .9); border-radius: 2cqw; }
 .pc-dots .dots { gap: 1cqw; }
 .pc-dots .mp { width: 6cqw; height: 6cqw; }
+.pc-on { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+.pc-on .mp { width: 32cqw; height: 32cqw; stroke-width: .9; filter: drop-shadow(0 1.2cqw 0 rgba(29, 29, 29, .35)); }
+.pc-on .mp + .mp { margin-left: var(--ov); }
 .pc-fx { flex: 1; display: flex; align-items: center; justify-content: center; text-align: center; padding: 1.3cqw 4.4cqw; font-size: 6.35cqw; line-height: 1.45; font-weight: 700; }
 .pc-ft { display: flex; align-items: flex-end; justify-content: space-between; padding: 0 4.4cqw 3.2cqw; font-size: 3.5cqw; font-weight: 700; }
 .pc-vp { display: flex; align-items: baseline; gap: 1.3cqw; font-family: 'Dela Gothic One', system-ui, sans-serif; font-size: 8.25cqw; line-height: 1; }

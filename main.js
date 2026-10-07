@@ -246,12 +246,17 @@ function render() {
   const rank = (s) => GENRES.indexOf(genre(s.key));
   for (const s of G.pub.slice().sort((a, b) => rank(a) - rank(b))) {
     const d = NE.defOf(s.key);
+    // 置いたコマは絵の真ん中に大きく、空きと人数は左下に小さく
     const dots = h('span', 'dots');
     if (s.cap > 9) dots.append(h('small', null, `${s.occ.length} 人`));
-    else for (let i = 0; i < s.cap; i++) {
-      dots.append(i < s.occ.length ? meeple(COLORS[s.occ[i]]) : meeple('#1d1d1d', 'empty'));
+    else for (let i = s.occ.length; i < s.cap; i++) dots.append(meeple('#1d1d1d', 'empty'));
+    const c = miniCard(s.key, () => clickWork({ pub: s.uid }), !my || !!ui || !NE.canUse(G, { pub: s.uid }), d.name, [dots.childNodes.length ? dots : null], true);
+    if (s.occ.length) {
+      const on = h('span', 'pc-on', null, s.occ.map((o) => meeple(COLORS[o])));
+      on.style.setProperty('--ov', s.occ.length > 3 ? '-22cqw' : '-8cqw'); // 多いほど重ねる
+      c.querySelector('.pc-art').append(on);
     }
-    pub.append(miniCard(s.key, () => clickWork({ pub: s.uid }), !my || !!ui || !NE.canUse(G, { pub: s.uid }), d.name, [dots], true));
+    pub.append(c);
   }
   kids.push(pub);
 
