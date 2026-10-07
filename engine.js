@@ -438,14 +438,14 @@ const NE = (() => {
   }
 
   // CPU の評価は「点」で測る。現金 1 = 1 点、手札 1 枚 = 約 2〜3 点（市場で 1 枚 6 点になるが、場所は 1 つしかない）。
-  const TUNE = { card: 3.5, act: 1.5, uses: 1.2, hireAct: 6, liq: 0.7, own: 2, margin: 1, bslot: 5, two: 0.5, dollW: 0.8, gmargin: 4, ghire: 5.5, vpSave: 0.7 }; // card=手札 1 枚の点 act=ほかの手の基準 uses=建物の効果を使う回数の係数 hireAct=労働者 1 人の 1 ラウンドの稼ぎ liq=売れない建物の割引 own=自分の建物の下駄 margin=雇うときの現金の余裕 bslot=建てる職場の点 two=2 人用の職場で引く（1 人用の最良手の何倍か） dollW=人形の稼ぎの重み gmargin・ghire=グローリーで雇うときの現金の余裕・労働者 1 人の稼ぎ（現金が少ない作品なので控えめ） vpSave=勝利点で安くなる分の見込み
+  const TUNE = { card: 3.5, act: 1.5, uses: 1.2, hireAct: 6, liq: 0.7, own: 2, margin: 1, bslot: 5, two: 0.5, dollW: 0.8, gmargin: 4, ghire: 5.5, vpSave: 0.7, vpW: 5, vpSaveM: 3 }; // card=手札 1 枚の点 act=ほかの手の基準 uses=建物の効果を使う回数の係数 hireAct=労働者 1 人の 1 ラウンドの稼ぎ liq=売れない建物の割引 own=自分の建物の下駄 margin=雇うときの現金の余裕 bslot=建てる職場の点 two=2 人用の職場で引く（1 人用の最良手の何倍か） dollW=人形の稼ぎの重み gmargin・ghire=グローリーで雇うときの現金の余裕・労働者 1 人の稼ぎ（現金が少ない作品なので控えめ） vpSave=勝利点で安くなる分の見込み vpW・vpSaveM=メセナで勝利点を取る点・勝利点で安くなる分の倍率（勝利点は 20 枚の取り合いなので先に取る。上げるほど勝率が上がり、5 あたりで頭打ち）
   const cardPts = (c) => (c === 'g' ? TUNE.card * 0.8 : TUNE.card + BLD[c].value * 0.06);
   // 残りラウンドが少ないほど、持っている札は使い道がなくなる
   const cardScale = (G) => Math.min(1, (ROUNDS - G.round + 0.5) / 3);
   // 勝利点を k 枚もらうと、手札の「勝利点で安くなる建物」の費用が下がる分（費用 1 = 手札 1 枚の点。建てるとは限らないので TUNE.vpSave 倍）
   const vpSave = (G, P, hand, k) => {
     const Q = { ...P, vp: (P.vp || 0) + Math.min(k, G.vpLeft) };
-    return hand.reduce((t, c) => t + (BLD[c] && BLD[c].costDown ? buildCost(c, 0, P) - buildCost(c, 0, Q) : 0), 0) * TUNE.card * TUNE.vpSave;
+    return hand.reduce((t, c) => t + (BLD[c] && BLD[c].costDown ? buildCost(c, 0, P) - buildCost(c, 0, Q) : 0), 0) * TUNE.card * (G.ed === 'm' ? TUNE.vpSaveM : TUNE.vpSave);
   };
   // 効果 e を 1 回使ったときの値打ち（点）。手札の枚数は上限を超えた分を安く見る
   function effPts(G, P, e, extra, avg) {
@@ -460,7 +460,7 @@ const NE = (() => {
     if (e.fill) draw(Math.max(0, e.fill - P.hand.length), TUNE.card * 0.8);
     if (e.look) v += (TUNE.card + 3) * cs;
     // 勝利点: 3 枚そろうと 10 点。いま使うときは持っている枚数での増え方、建物の効果としては 1 枚 3.3 点とみる。会計事務所があれば 2 倍
-    if (e.vp) v += (avg ? e.vp * 3.3 : G.vpLeft > 0 ? vpPts({ vp: (P.vp || 0) + Math.min(e.vp, G.vpLeft) }) - vpPts(P) : 0) * (P.bld.some((b) => b.key === 'm_acct') ? 2 : 1);
+    if (e.vp) v += (avg ? e.vp * 3.3 : G.vpLeft > 0 ? vpPts({ vp: (P.vp || 0) + Math.min(e.vp, G.vpLeft) }) - vpPts(P) : 0) * (P.bld.some((b) => b.key === 'm_acct') ? 2 : 1) * (G.ed === 'm' ? TUNE.vpW : 1);
     if (e.vp && !avg) v += vpSave(G, P, P.hand, e.vp) * cs;
     if (e.build != null) v += TUNE.bslot * cs; // 大工の枠は少ないので、自分の建てる職場は貴重
     return v;
