@@ -239,7 +239,7 @@ function posterCard(c, cls, fn, disabled) {
 }
 
 // 作品: p 無印 / m メセナ / g グローリー（g は準備中）
-const EDS = [['p', 'ナショナルエコノミー', true], ['m', 'メセナ', true], ['g', 'グローリー', false]];
+const EDS = [['p', 'ナショナルエコノミー', true], ['m', 'メセナ', true], ['g', 'グローリー', true]];
 // 古い保存（ed なし）は 'p'。戦績は作品ごと（byEd）。古い平らな戦績 {games, wins} は無印のものとして読む
 let settings = load('settings', {});
 if (!EDS.some((e) => e[0] === settings.ed && e[2])) settings = { ...settings, ed: 'p' };
@@ -322,7 +322,7 @@ function tapCard(i, me) {
   if (ui.need && ui.need.build != null && (ui.builds.length < (ui.need.build2 ? 2 : 1) || ui.builds.includes(i))) {
     ui.builds = ui.builds.includes(i) ? ui.builds.filter((x) => x !== i) : ui.builds.concat(i); ui.sel = [];
   } else if (ui.sel.includes(i)) ui.sel = ui.sel.filter((x) => x !== i);
-  else if (ui.sel.length < want(me)) ui.sel.push(i);
+  else if (ui.sel.length < (ui.need && ui.need.goods2 ? me.hand.length : want(me))) ui.sel.push(i);
   sfx('card');
   render();
 }
@@ -383,7 +383,8 @@ function render() {
     if (bn && (ui.builds.length < (ui.need.build2 ? 2 : 1) || ui.builds.includes(i))) {
       const sum = ui.need.build2 === 'sum'; // 地球建設は費用の合計、二胡市建設は同じ費用
       const first = ui.builds.length && !ui.builds.includes(i) ? NE.bcost(me, ui.need, me.hand[ui.builds[0]]) : 0;
-      ok = NE.canBuildCard(ui.need, c) && NE.bcost(me, ui.need, c) + (sum ? first : 0) <= me.hand.length - (ui.need.build2 ? 2 : 1);
+      const reserve = ui.need.build2 && !ui.builds.some((x) => x !== i) ? 1 : 0; // 2 つ建てで 2 枚目の分
+      ok = NE.canBuildCard(ui.need, c) && NE.bcost(me, ui.need, c) + (sum ? first : 0) <= NE.wsum(me, ui.need, [i].concat(ui.builds)) - reserve;
       if (ok && ui.builds.length && !ui.builds.includes(i) && !sum) ok = NE.bcost(me, ui.need, c) === first;
     } else if (bn) ok = !ui.builds.includes(i);
     const b = posterCard(c, '', () => tapCard(i, me), !ok);
@@ -491,14 +492,14 @@ function choicePanel(me) {
   let msg;
   if (ui.trim) msg = `手札が多い。捨てるカードを ${n} 枚選ぶ（${ui.sel.length}/${n}）`;
   else if (ui.need.build != null && n == null) msg = ui.need.build2 ? `建てる建物カードを手札から 2 枚選ぶ（${ui.builds.length}/2）` : '建てる建物カードを手札から選ぶ';
-  else if (ui.need.build != null) msg = `${ui.builds.map((x) => NE.cardName(me.hand[x])).join('・')} を建てる。捨てるカードを ${n} 枚選ぶ（${ui.sel.length}/${n}）`;
+  else if (ui.need.build != null) msg = `${ui.builds.map((x) => NE.cardName(me.hand[x])).join('・')} を建てる。捨てるカードを選ぶ（${ui.need.goods2 ? `費用 ${n}。消費財は 1 枚で 2 枚分。選んだ分 ${ui.sel.reduce((t, x) => t + (me.hand[x] === 'g' ? 2 : 1), 0)}` : `${ui.sel.length}/${n} 枚`}）`;
   else if (!n) msg = '労働者 2 人を同時に置く';
   else msg = `捨てるカードを ${n} 枚選ぶ（${ui.sel.length}/${n}）` + (ui.need.two ? ' 労働者 2 人を同時に置く' : '');
   const go = () => (ui.trim ? act({ kind: 'trim', disc: ui.sel }) : act({ kind: 'place', ...ui.w, disc: ui.sel, build: ui.builds[0], build2: ui.builds[1] }));
   return h('section', 'choice', null, [
     h('div', null, msg),
     h('div', 'row', null, [
-      btn('決める', 'big', go, n == null || ui.sel.length !== n),
+      btn('決める', 'big', go, n == null || (ui.need && ui.need.goods2 ? !NE.payOk(me, ui.need, ui.sel, n) : ui.sel.length !== n)),
       ui.trim ? h('span') : btn('やめる', 'pill', () => { ui = null; render(); }),
     ]),
   ]);

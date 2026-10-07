@@ -11,6 +11,8 @@ function check(G) {
   assert.equal(goods, NE.EDITION[G.ed].goods, '消費財の枚数');
   assert.equal(G.vpLeft + G.players.reduce((s, p) => s + p.vp, 0), NE.EDITION[G.ed].vp, '勝利点トークンの枚数');
   assert.ok(G.vpLeft >= 0, '勝利点が負');
+  assert.equal(G.dollLeft + G.players.reduce((t, p) => t + p.dolls, 0), NE.EDITION[G.ed].dolls || 0, '機械人形の数');
+  G.players.forEach((p) => assert.ok(p.dolls <= 5 && p.dollFree <= p.dolls, '人形の上限'));
   const bld = G.deck.length + G.discard.length + (G.look ? G.look.length : 0) + G.pub.filter((s) => NE.BLD[s.key]).length
     + G.players.reduce((s, p) => s + p.bld.length + p.hand.filter((c) => c !== 'g').length, 0);
   assert.equal(bld, NE.edTotal(G.ed), '建物の枚数');
@@ -114,8 +116,59 @@ function check(G) {
   for (const k of ['t_doll', 't_two', 't_vil', 't_hq']) delete NE.BLD[k];
 }
 
+// 場面: グローリーのカード
+{
+  assert.equal(NE.edTotal('g'), 71, 'グローリーは 71 枚');
+  const mk = (hand, keys, ed = 'g') => { const G = NE.create(2, NE.seeded(1), 'normal', ed); const P = G.players[G.actor]; P.hand = hand; P.bld = keys.map((key) => ({ key, used: false })); P.free = 2; P.dollFree = 0; return { G, P }; };
+  // 機械人形: 5 体まで。尽きたらもらえない
+  let { G, P } = mk(['g_doll', 'farm', 'farm', 'farm', 'farm'], ['g_colony']);
+  assert.ok(NE.apply(G, { kind: 'place', own: 0, build: 0, disc: [1, 2, 3, 4] }), '人形を建てる'); assert.equal(P.dolls, 1);
+  ({ G, P } = mk(['g_doll', 'farm', 'farm', 'farm', 'farm'], ['g_colony'])); G.dollLeft = 0;
+  NE.apply(G, { kind: 'place', own: 0, build: 0, disc: [1, 2, 3, 4] }); assert.equal(P.dolls, 0, '尽きたらもらえない');
+  // 遺物: 勝利点 2。尽きたら 0
+  ({ G, P } = mk(['g_relic'], ['g_colony', 'g_atelier']));
+  const g0 = G.goods; assert.ok(NE.apply(G, { kind: 'place', own: 0, build: 0 }), '遺物（費用 0）'); assert.equal(P.vp, 2); assert.equal(P.hand.length, 1, '植民団のあと消費財 1 枚'); assert.equal(G.goods, g0 - 1);
+  // 農村・養鶏場・工房・美術館・ゲームカフェ
+  ({ G, P } = mk(['farm', 'farm'], ['g_chicken', 'g_atelier', 'g_art', 'g_cafe']));
+  assert.ok(NE.apply(G, { kind: 'place', own: 0 })); assert.equal(P.hand.length, 4, '偶数枚なら 2 枚');
+  P.free = 2; P.hand = ['farm', 'farm', 'farm']; P.bld.forEach((b) => { b.used = false; }); G.turn = G.actor = G.players.indexOf(P);
+  NE.apply(G, { kind: 'place', own: 0 }); assert.equal(P.hand.length, 6, '奇数枚なら 3 枚');
+  ({ G, P } = mk(['farm'], ['g_atelier'])); 
+  NE.apply(G, { kind: 'place', own: 0 }); assert.equal(P.hand.length, 2); assert.equal(P.vp, 1);
+  ({ G, P } = mk(['farm', 'farm', 'farm', 'farm', 'farm'], ['g_art'])); G.house = 30; const c0 = P.cash;
+  NE.apply(G, { kind: 'place', own: 0 }); assert.equal(P.cash, c0 + 14, '手札 5 枚で $14');
+  ({ G, P } = mk(['farm', 'farm'], ['g_art'])); G.house = 30; const c3 = P.cash; NE.apply(G, { kind: 'place', own: 0 }); assert.equal(P.cash, c3 + 7, '手札が 5 枚でなければ $7');
+  ({ G, P } = mk(['farm', 'farm', 'farm', 'farm', 'farm'], ['g_art'])); G.house = 10; assert.ok(!NE.canUse(G, { own: 0 }), '家計が足りないと使えない');
+  ({ G, P } = mk([], ['g_cafe'])); G.house = 30; P.free = 1; const c1 = P.cash; NE.apply(G, { kind: 'place', own: 0 }); assert.equal(P.cash, c1 + 10, '最後なら $10');
+  ({ G, P } = mk([], ['g_cafe'])); G.house = 30; const c2 = P.cash; NE.apply(G, { kind: 'place', own: 0 }); assert.equal(P.cash, c2 + 5, '労働者が残っていれば $5');
+  // 摩天建設: 手札が 0 になったら建物 2 枚
+  ({ G, P } = mk(['farm', 'farm', 'farm'], ['g_sky'])); // farm は費用 1
+  assert.ok(NE.apply(G, { kind: 'place', own: 0, build: 0, disc: [1] }), '建てる'); assert.equal(P.hand.length, 1, '手札が残れば引かない');
+  ({ G, P } = mk(['farm', 'farm'], ['g_sky'])); NE.apply(G, { kind: 'place', own: 0, build: 0, disc: [1] }); assert.equal(P.hand.length, 2, '0 枚になって 2 枚');
+  // 転送装置・綿花農場: 2 人同時。費用 0
+  ({ G, P } = mk(['steel', 'farm'], ['g_teleport'])); assert.ok(NE.apply(G, { kind: 'place', own: 0, build: 0 }), '費用 0'); assert.equal(P.free, 0);
+  // モダニズム建設: 消費財 1 枚を 2 枚分
+  ({ G, P } = mk(['steel', 'g', 'g', 'farm'], ['g_modern'])); // 費用 4
+  assert.ok(!NE.apply(G, { kind: 'place', own: 0, build: 0, disc: [1] }), '2 枚分では足りない');
+  assert.ok(!NE.apply(G, { kind: 'place', own: 0, build: 0, disc: [1, 2, 3] }), '無駄に捨てない');
+  assert.ok(NE.apply(G, { kind: 'place', own: 0, build: 0, disc: [1, 2] }), '消費財 2 枚で費用 4'); assert.equal(P.hand.length, 1);
+  // 割引
+  ({ G, P } = mk([], [])); P.vp = 5;
+  assert.deepEqual(['g_steam', 'g_refinery', 'g_green', 'g_loco'].map((k) => NE.buildCost(k, 0, P)), [1, 3, 4, 4]);
+  P.vp = 1; assert.deepEqual(['g_steam', 'g_refinery', 'g_green', 'g_loco'].map((k) => NE.buildCost(k, 0, P)), [2, 5, 6, 7]);
+  // 終了時の点（資産価値 +X）
+  const E = (keys, f) => { ({ G, P } = mk([], keys)); f && f(P); return NE.endBonus(P); };
+  assert.equal(E(['g_guild', 'farm', 'factory']), 20); assert.equal(E(['g_guild', 'farm']), 0);
+  assert.equal(E(['g_temple']), 30); assert.equal(E(['g_temple', 'g_monument']), 0);
+  assert.equal(E(['g_ivory'], (p) => { p.vp = 7; }), 22);
+  assert.equal(E(['g_square'], (p) => { p.workers = 5; }), 18); assert.equal(E(['g_square'], (p) => { p.workers = 4; p.hired = 1; p.dolls = 3; }), 18);
+  assert.equal(E(['g_harvest'], (p) => { p.hand = ['g', 'g', 'g', 'g']; }), 26);
+  assert.equal(E(['g_coop', 'bigfarm', 'farm']), 0, '農業 18'); assert.equal(E(['g_coop', 'bigfarm', 'farm', 'farm']), 18, '農業 24');
+  assert.equal(E(['g_expo', 'steel', 'factory']), 24, '工業 32'); assert.equal(E(['g_expo', 'steel']), 0);
+}
+
 const rows = [];
-for (const [ed, n] of [['p', 2], ['p', 3], ['p', 4], ['m', 2], ['m', 3], ['m', 4]]) {
+for (const [ed, n] of [['p', 2], ['p', 3], ['p', 4], ['m', 2], ['m', 3], ['m', 4], ['g', 2], ['g', 3], ['g', 4]]) {
   let sum = 0, win = 0, bld = 0, debt = 0, debtGames = 0, steps = 0, sold = 0;
   for (let seed = 1; seed <= GAMES; seed++) {
     const G = NE.create(n, NE.seeded(seed * 7919 + n), 'normal', ed);

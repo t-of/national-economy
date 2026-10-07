@@ -106,6 +106,39 @@ const NE = (() => {
     m_cathedral: { name: '大聖堂', cost: 10, value: 50, count: 3, fac: true, e: null, text: '効果なし', costDown: (p) => ((p.vp || 0) >= 5 ? 4 : 0), costText: '勝利点 5 枚以上で −4' },
   };
   for (const [k, d] of Object.entries(MECENAT)) BLD[k] = { ed: 'm', ...d };
+
+  // グローリー（2019）の 26 種 71 枚。仕様 12-3（※は推定: 遺物 4・消費者組合 18・機械人形 2・収穫祭 26・浄火の神殿 30、ゲームカフェの「最後なら」は置いたあと手元の労働者が 0）
+  const vpDown = (n, k) => (p) => ((p.vp || 0) >= n ? k : 0);
+  const sumVal = (p, c) => p.bld.filter((b) => cats(BLD[b.key]).includes(c)).reduce((t, b) => t + BLD[b.key].value, 0);
+  const GLORY = {
+    g_relic: { name: '遺物', cost: 0, value: 4, count: 3, fac: true, e: null, onBuild: { vp: 2 }, text: '建てたとき勝利点 2 枚' },
+    g_village: { name: '農村', cost: 1, value: 6, count: 6, cat: 'agri', e: { choice: [{ drawG: 2 }, { disc: 2, drawB: 3 }] } },
+    g_colony: { name: '植民団', cost: 1, value: 6, count: 5, e: { build: 0, thenG: 1 } },
+    g_atelier: { name: '工房', cost: 1, value: 8, count: 5, cat: 'ind', e: { drawB: 1, vp: 1 } },
+    g_steam: { name: '蒸気工場', cost: 2, value: 10, count: 8, cat: 'ind', e: { disc: 2, drawB: 4 }, costDown: vpDown(2, 1), costText: '勝利点 2 枚以上で −1' },
+    g_chicken: { name: '養鶏場', cost: 2, value: 12, count: 4, cat: 'agri', e: { parity: [2, 3] } },
+    g_sky: { name: '摩天建設', cost: 2, value: 10, count: 3, e: { build: 0, lastB: 2 } },
+    g_cafe: { name: 'ゲームカフェ', cost: 2, value: 10, count: 3, e: { take: 5, takeLast: 10 } },
+    g_cotton: { name: '綿花農場', cost: 3, value: 14, count: 3, cat: 'agri', e: { drawG: 5, two: true } },
+    g_art: { name: '美術館', cost: 3, value: 14, count: 2, e: { take: 7, takeHand: [5, 14] } },
+    g_monument: { name: '記念碑', cost: 3, value: 24, count: 2, fac: true, e: null, text: '効果なし' },
+    g_coop: { name: '消費者組合', cost: 3, value: 18, count: 1, fac: true, e: null, text: '終了時、農業の建物の資産価値の合計が 20 以上なら資産価値 +18', end: (p) => (sumVal(p, 'agri') >= 20 ? 18 : 0) },
+    g_doll: { name: '機械人形', cost: 4, value: 2, count: 5, fac: true, e: null, onBuild: { doll: 1 }, text: '建てたとき機械人形 1 体（すぐ働く・賃金なし）' },
+    g_mine: { name: '炭鉱', cost: 4, value: 20, count: 2, cat: 'ind', e: { drawB: 5, two: true } },
+    g_modern: { name: 'モダニズム建設', cost: 4, value: 18, count: 2, e: { build: 0, goods2: true } },
+    g_theater: { name: '劇場', cost: 4, value: 20, count: 2, e: { disc: 2, take: 20 } },
+    g_guild: { name: 'ギルドホール', cost: 4, value: 20, count: 1, fac: true, e: null, text: '終了時、農業と工業の建物を両方持っていれば資産価値 +20', end: (p) => (nCat(p, 'agri') && nCat(p, 'ind') ? 20 : 0) },
+    g_ivory: { name: '象牙の塔', cost: 4, value: 22, count: 1, fac: true, e: null, text: '終了時、勝利点 7 枚以上なら資産価値 +22', end: (p) => ((p.vp || 0) >= 7 ? 22 : 0) },
+    g_refinery: { name: '精錬所', cost: 5, value: 16, count: 3, cat: 'ind', e: { drawB: 3 }, costDown: vpDown(3, 2), costText: '勝利点 3 枚以上で −2' },
+    g_teleport: { name: '転送装置', cost: 5, value: 22, count: 2, e: { build: 0, free: true, two: true } },
+    g_square: { name: '革命広場', cost: 5, value: 18, count: 1, fac: true, e: null, text: '終了時、労働者が 5 人（機械人形を除く）なら資産価値 +18', end: (p) => (p.workers + p.hired === 5 ? 18 : 0) },
+    g_harvest: { name: '収穫祭', cost: 5, value: 26, count: 1, fac: true, e: null, text: '終了時、手札の消費財が 4 枚以上なら資産価値 +26', end: (p) => (goodsIn(p) >= 4 ? 26 : 0) },
+    g_expo: { name: '技術展示会', cost: 5, value: 24, count: 1, fac: true, e: null, text: '終了時、工業の建物の資産価値の合計が 30 以上なら資産価値 +24', end: (p) => (sumVal(p, 'ind') >= 30 ? 24 : 0) },
+    g_green: { name: '温室', cost: 6, value: 18, count: 2, cat: 'agri', e: { drawG: 4 }, costDown: vpDown(4, 2), costText: '勝利点 4 枚以上で −2' },
+    g_temple: { name: '浄火の神殿', cost: 6, value: 30, count: 1, fac: true, e: null, text: '終了時、売れない建物がこれ 1 つだけなら資産価値 +30', end: (p) => (p.bld.filter((b) => BLD[b.key].nosell).length === 1 ? 30 : 0) },
+    g_loco: { name: '機関車工場', cost: 7, value: 24, count: 2, cat: 'ind', e: { disc: 3, drawB: 7 }, costDown: vpDown(5, 3), costText: '勝利点 5 枚以上で −3' },
+  };
+  for (const [k, d] of Object.entries(GLORY)) BLD[k] = { ed: 'g', ...d };
   for (const d of Object.values(BLD)) { d.ed = d.ed || 'p'; if (d.fac) d.nosell = true; }
   const edTotal = (ed) => Object.values(BLD).filter((d) => d.ed === ed).reduce((s, d) => s + d.count, 0);
   const BLD_TOTAL = edTotal('p');
@@ -121,15 +154,18 @@ const NE = (() => {
     if (e.disc) t.push(`${e.disc} 枚捨てて`);
     if (e.build != null) t.push(`${e.onlyText || ''}${e.build2 === 'sum' ? '建物を 2 つ（費用は合計）' : e.build2 ? '同じ費用の建物 2 つを 1 つ分の費用で' : ''}${e.free ? '費用 0 で' : ''}` + (e.build ? `建てる（費用 −${e.build}）` : '建てる'));
     if (e.vp) t.push(`勝利点 ${e.vp} 枚`);
+    if (e.thenG) t.push(`そのあと消費財 ${e.thenG} 枚`);
+    if (e.goods2) t.push('（費用は消費財 1 枚を 2 枚分に数える）');
     if (e.lastB) t.push(`手札が尽きたら建物 ${e.lastB} 枚`);
     if (e.then) t.push(`建物を ${e.then} 枚引く`);
     if (e.look) t.push(`建物の山の上 ${e.look} 枚から 1 枚取る`);
     if (e.drawB) t.push(e.empty ? `建物を ${e.drawB} 枚（手札 0 なら ${e.empty} 枚）引く` : `建物を ${e.drawB} 枚引く`);
+    if (e.parity) t.push(`手札が偶数枚なら消費財 ${e.parity[0]} 枚、奇数枚なら ${e.parity[1]} 枚引く`);
     if (e.drawG) t.push(`消費財を ${e.drawG} 枚引く` + (e.ifG ? `（手札に消費財があれば ${e.ifG} 枚）` : ''));
     if (e.stash) t.push(`消費財 ${e.stash} 枚を置き、次のラウンドに手札へ`);
     if (e.perGood) t.push(`手札の消費財 1 枚につき家計から $${e.perGood}`);
     if (e.fill) t.push(`手札が ${e.fill} 枚になるまで消費財を引く`);
-    if (e.take) t.push(e.give ? `家計から $${e.take} 取り $${e.give} 戻す` : `家計から $${e.take}`);
+    if (e.take) t.push(e.give ? `家計から $${e.take} 取り $${e.give} 戻す` : `家計から $${e.take}` + (e.takeLast ? `（置いたあと自分の労働者が残っていなければ $${e.takeLast}）` : '') + (e.takeHand ? `（手札がちょうど ${e.takeHand[0]} 枚なら $${e.takeHand[1]}。家計が足りないと使えない）` : ''));
     if (e.needMine) t.push('（このラウンド自分の労働者が鉱山にいるときだけ）');
     if (e.hireTo) t.push(`労働者を ${e.hireTo} 人になるまで増やす`);
     if (e.hire) t.push(e.now ? '労働者 +1（すぐ働く）' : '労働者 +1');
@@ -277,7 +313,26 @@ const NE = (() => {
     if (!sp || !sp.e) return null;
     if (sp.e.choice && w.opt == null) return { choice: sp.e.choice, two: !!sp.e.two }; // 先に選んでもらう
     const e = sp.e.choice ? sp.e.choice[w.opt] : sp.e;
-    return e ? { two: !!sp.e.two, disc: e.disc || 0, build: e.build != null ? e.build : null, build2: e.build2 || false, free: !!e.free, only: e.only } : null;
+    return e ? { two: !!sp.e.two, disc: e.disc || 0, build: e.build != null ? e.build : null, build2: e.build2 || false, free: !!e.free, only: e.only, goods2: !!e.goods2 } : null;
+  }
+  const units = (P) => P.free + (P.dollFree || 0); // 置ける労働者と人形の数
+  // 家計からもらう額（美術館は手札の枚数で、ゲームカフェは last=置いたあと手元に労働者が残っていないとき増える）
+  const takeAmt = (P, e, last) => (last && e.takeLast ? e.takeLast : e.takeHand && P.hand.length === e.takeHand[0] ? e.takeHand[1] : e.take);
+  // 費用の払い方。モダニズム建設は消費財 1 枚を 2 枚分に数える（無駄に捨てない組だけ）
+  const wt = (P, e, i) => (e && e.goods2 && P.hand[i] === 'g' ? 2 : 1);
+  const wsum = (P, e, excl) => P.hand.reduce((t, c, i) => (excl.includes(i) ? t : t + wt(P, e, i)), 0);
+  function payOk(P, e, disc, cost) {
+    if (!cost) return disc.length === 0;
+    if (!e.goods2) return disc.length === cost;
+    const w = disc.reduce((t, i) => t + wt(P, e, i), 0);
+    return w >= cost && w - Math.min(...disc.map((i) => wt(P, e, i))) < cost;
+  }
+  // CPU: 払う札の添字（安い札から）
+  function payDisc(P, e, idx, cost) {
+    if (!e.goods2) return cheapest(P.hand, cost, idx);
+    const out = []; let w = 0;
+    for (const i of cheapest(P.hand, P.hand.length, idx)) { if (w >= cost) break; out.push(i); w += wt(P, e, i); }
+    return out;
   }
   // 費用。off=職場の割引、P を渡すと建物の costDown(P) も引く
   const buildCost = (c, off, P) => Math.max(0, BLD[c].cost - off - (P && BLD[c].costDown ? BLD[c].costDown(P) : 0));
@@ -290,17 +345,17 @@ const NE = (() => {
     const h = P.hand, ok = h.map((c, i) => i).filter((i) => canBuildCard(n, h[i])), out = [];
     for (const i of ok) {
       const cost = bcost(P, n, h[i]);
-      if (!n.build2) { if (cost <= h.length - 1) out.push({ idx: [i], cost }); continue; }
+      if (!n.build2) { if (cost <= wsum(P, n, [i])) out.push({ idx: [i], cost }); continue; }
       for (const j of ok) {
         const c2 = n.build2 === 'sum' ? cost + bcost(P, n, h[j]) : cost;
-        if (j > i && (n.build2 === 'sum' || cost === bcost(P, n, h[j])) && c2 <= h.length - 2) out.push({ idx: [i, j], cost: c2 });
+        if (j > i && (n.build2 === 'sum' || cost === bcost(P, n, h[j])) && c2 <= wsum(P, n, [i, j])) out.push({ idx: [i, j], cost: c2 });
       }
     }
     return out;
   }
   function usable(G, P, e) {
     if (e.disc && P.hand.length < e.disc) return false;
-    if (e.take && G.house < e.take) return false;
+    if (e.take && G.house < takeAmt(P, e, false)) return false;
     if (e.fill && P.hand.length >= e.fill) return false;
     if (e.needMine && !G.pub.some((s) => s.key === 'mine' && s.occ.includes(G.actor))) return false;
     if (e.perGood && (!goodsIn(P) || G.house < e.perGood * goodsIn(P))) return false;
@@ -309,7 +364,6 @@ const NE = (() => {
     if (e.build != null && !buildSets(P, e).length) return false;
     return true;
   }
-  const units = (P) => P.free + (P.dollFree || 0); // 置ける労働者と人形の数
   function canUse(G, w) {
     if (G.phase !== 'place') return false;
     const P = G.players[G.actor], sp = spot(G, G.actor, w);
@@ -341,7 +395,7 @@ const NE = (() => {
     if (e.build != null) {
       bs = e.build2 ? [a.build, a.build2] : [a.build];
       const set = new Set(bs).size === bs.length && buildSets(P, e).find((x) => x.idx.length === bs.length && bs.every((i) => x.idx.includes(i)));
-      if (!set || disc.some((x) => bs.includes(x)) || !ok(disc, set.cost)) return false;
+      if (!set || disc.some((x) => bs.includes(x)) || !ok(disc, disc.length) || !payOk(P, e, disc, set.cost)) return false;
     } else if (!ok(disc, e.disc || 0)) return false;
     // 実行
     const name = sp.s ? defOf(sp.s.key).name : BLD[sp.b.key].name;
@@ -354,14 +408,15 @@ const NE = (() => {
     built.forEach((k) => { const o = BLD[k].onBuild; if (!o) return; if (o.vp) msg += ` 勝利点 ${giveVp(G, P, o.vp)} 枚`; if (o.doll) { const x = Math.min(o.doll, G.dollLeft || 0); G.dollLeft -= x; P.dolls = (P.dolls || 0) + x; P.dollFree = (P.dollFree || 0) + x; msg += ` 機械人形 +${x}`; } });
     if (e.lastB && !P.hand.length) { drawB(G, P, e.lastB); msg += ` 手札が尽きて建物 ${e.lastB} 枚`; }
     if (e.vp) msg += ` 勝利点 ${giveVp(G, P, e.vp)} 枚`;
-    if (e.take) { const x = e.take - (e.give || 0); P.cash += x; G.house -= x; msg += ` 家計から ${x}`; }
+    if (e.thenG) { const before = G.goods; drawG(G, P, e.thenG); msg += ` 消費財 ${before - G.goods} 枚`; }
+    if (e.take) { const x = Math.min(G.house, takeAmt(P, e, units(P) === 0)) - (e.give || 0); P.cash += x; G.house -= x; msg += ` 家計から ${x}`; }
     if (e.perGood) { const x = e.perGood * goodsIn(P); P.cash += x; G.house -= x; msg += ` 家計から ${x}`; }
     if (e.stash) { const x = Math.min(e.stash, G.goods); G.goods -= x; P.stash += x; // 売られた醸造所（公共の職場）でも使えるので、取り置きは持ち主に付ける
        msg += ` 消費財 ${x} 枚を置いた`; }
     const nb = e.drawB ? (e.empty && !P.hand.length ? e.empty : e.drawB) : 0;
     if (nb) { drawB(G, P, nb); msg += ` 建物 ${nb} 枚`; }
     if (e.then) { drawB(G, P, e.then); msg += ` 建物 ${e.then} 枚`; }
-    const ng = (e.ifG && goodsIn(P) ? e.ifG : e.drawG || 0) + (e.fill ? e.fill - P.hand.length : 0);
+    const ng = (e.parity ? e.parity[P.hand.length % 2] : e.ifG && goodsIn(P) ? e.ifG : e.drawG || 0) + (e.fill ? e.fill - P.hand.length : 0);
     if (ng) { const before = G.goods; drawG(G, P, ng); msg += ` 消費財 ${before - G.goods} 枚`; }
     if (e.hire || e.hireTo) {
       const x = e.hireTo ? Math.min(e.hireTo, maxWorkers(P)) - total(P) : Math.min(e.hire, maxWorkers(P) - total(P));
@@ -394,6 +449,7 @@ const NE = (() => {
     if (e.drawB) draw(e.empty && !P.hand.length ? e.empty : e.drawB, TUNE.card + 0.4);
     if (e.then) draw(e.then, TUNE.card + 0.4);
     if (e.drawG) draw(e.ifG && goodsIn(P) ? e.ifG : e.drawG, TUNE.card * 0.8);
+    if (e.parity) draw(e.parity[P.hand.length % 2], TUNE.card * 0.8);
     if (e.stash && G.round < ROUNDS) v += e.stash * TUNE.card * 0.6; // 次のラウンドに手札へ（上限は見ない）
     if (e.fill) draw(Math.max(0, e.fill - P.hand.length), TUNE.card * 0.8);
     if (e.look) v += (TUNE.card + 3) * cs;
@@ -418,7 +474,7 @@ const NE = (() => {
     if (e.build != null) {
       let best = -Infinity;
       buildSets(P, e).forEach(({ idx, cost }) => {
-        const d = cheapest(hand, cost, idx), cs2 = idx.map((i) => hand[i]);
+        const d = payDisc(P, e, idx, cost), cs2 = idx.map((i) => hand[i]);
         const rest = hand.filter((x, j) => !idx.includes(j) && !d.includes(j));
         const after = { ...P, bld: P.bld.concat(cs2.map((key) => ({ key }))), hand: rest };
         const uses = left * TUNE.uses + (G.round < ROUNDS ? 0.3 : 0); // ラウンド 9 は建てたそのラウンドでしか使えない
@@ -432,12 +488,13 @@ const NE = (() => {
         });
         if (v > best) { best = v; a = { kind: 'place', ...w, build: idx[0], build2: idx[1], disc: d }; }
       });
-      s += best + (e.then ? effPts(G, P, { drawB: e.then }, -1) : 0);
+      s += best + (e.then ? effPts(G, P, { drawB: e.then }, -1) : 0) + (e.thenG ? effPts(G, P, { drawG: e.thenG }, -1) : 0);
     } else if (e.disc) {
       a.disc = cheapest(hand, e.disc, -1);
       s -= lose(a.disc);
     }
-    if (e.take) s += (e.take - (e.give || 0)) * mw;
+    if (e.take) s += (Math.min(G.house, takeAmt(P, e, units(P) - (sp.e.two ? 2 : 1) <= 0)) - (e.give || 0)) * mw;
+    if (sp.e.two) s -= 4; // 2 人使う分、ほかの手が 1 つ減る（G3 で整える）
     if (e.perGood) s += e.perGood * goodsIn(P) * mw;
     s += effPts(G, P, { ...e, then: 0, take: 0, lastB: 0 }, a.disc.length);
     if (e.start) s += 1;
@@ -465,6 +522,6 @@ const NE = (() => {
     return best.a;
   }
 
-  return { eff, units, ROUNDS, WAGE, MAX_WORKERS, GOODS_COUNT, BLD_TOTAL, edTotal, setCost, PUB, BLD, EDITION, create, seeded, canUse, needs, apply, cpuAct, score, effText, text, cardName, defOf, isBld, buildCost, bcost, canBuildCard, vpPts, giveVp, cats, handLimit, maxWorkers, penalty, unpaid, endBonus, sellable, recommendSell };
+  return { eff, units, payOk, wsum, takeAmt, ROUNDS, WAGE, MAX_WORKERS, GOODS_COUNT, BLD_TOTAL, edTotal, setCost, PUB, BLD, EDITION, create, seeded, canUse, needs, apply, cpuAct, score, effText, text, cardName, defOf, isBld, buildCost, bcost, canBuildCard, vpPts, giveVp, cats, handLimit, maxWorkers, penalty, unpaid, endBonus, sellable, recommendSell };
 })();
 if (typeof module !== 'undefined') module.exports = NE;
