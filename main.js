@@ -88,7 +88,7 @@ function chip(cls, label, value, tip) {
   return c;
 }
 
-// 盤面の小さいカード（公共の職場・建てた建物）。色とアイコンは手札と同じ。foot は下の段（労働者の点や資産）
+// 盤面の小さいカード（建てた建物）と、手札と同じ形の公共の職場。色とアイコンは手札と同じ。foot は下の段（労働者の点や資産）
 // big=手札と同じ大きさ（公共の職場）
 function miniCard(key, fn, disabled, name, foot, big) {
   const d = NE.BLD[key];
@@ -97,7 +97,47 @@ function miniCard(key, fn, disabled, name, foot, big) {
   b.style.setProperty('--bg', k[0]);
   b.style.setProperty('--fg', k[1]);
   b.title = `${name}　${NE.text(key)}`;
-  b.append(h('span', 'c-hd', null, [icon(d ? k[3] : PUB_ICON[key] || k[3]), h('small', null, big && d ? `${k[2]}・売却` : k[2])]), h('span', 'c-nm', name), h('span', 'c-fx', NE.text(key)), h('span', 'c-ft', null, foot));
+  if (big) return face(b, key, foot[0]);
+  const nm = h('span', 'c-nm', name);
+  nm.style.setProperty('--fs', 76 / [...name].length + 'px'); // 名前は 1 行。長いと字を小さくする
+  b.append(h('span', 'c-hd', null, [icon(d ? k[3] : PUB_ICON[key] || k[3]), h('small', null, k[2])]), nm, h('span', 'c-fx', NE.text(key)), h('span', 'c-ft', null, foot));
+  return b;
+}
+// 新しいカードの顔（上から: 色の帯・絵・効果・下の段）。大きさは card の幅（cqw）に比例する
+const pad2 = (n) => String(n + 1).padStart(2, '0');
+function face(b, key, dots) {
+  const g = key === 'g', d = g ? null : NE.BLD[key], p = !g && !d ? NE.PUB[key] : null;
+  const k = KIND[g ? 'g' : p ? 'pub' : d.fac ? 'fac' : d.cat || 'shop'];
+  const [cl, cv] = p ? ['定員', p.cap > 9 ? '∞' : p.cap || 1] : g ? ['費用', '―'] : ['費用', d.cost];
+  const nm = h('span', 'pc-nm', p ? p.name : NE.cardName(key));
+  nm.style.setProperty('--fs', 53 / [...nm.textContent].length + 'cqw'); // 名前は 1 行。長いと字を小さくする
+  const ib = h('span', 'pc-ib', null, [icon(p ? PUB_ICON[key] || k[3] : k[3])]);
+  const art = h('span', 'pc-art');
+  if (ART[key]) {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('viewBox', '0 0 280 168');
+    svg.setAttribute('preserveAspectRatio', 'xMidYMid slice');
+    svg.setAttribute('stroke', '#1d1d1d');
+    svg.setAttribute('stroke-width', '2');
+    svg.setAttribute('stroke-linejoin', 'round');
+    svg.innerHTML = ART[key];
+    art.append(svg);
+  } else { // 絵がないカードは、種類のアイコンを大きく出す
+    art.classList.add('noart');
+    art.append(icon(p ? PUB_ICON[key] || k[3] : k[3]));
+  }
+  if (d && d.nosell) art.append(h('span', 'c-ns', '売れない'));
+  if (dots) art.append(h('span', 'pc-dots', null, [dots]));
+  const idx = g ? 'G' : p ? 'P' + pad2(Object.keys(NE.PUB).indexOf(key)) : 'No.' + pad2(Object.keys(NE.BLD).indexOf(key));
+  const left = g ? '共通 ×多数' : p ? '公共 ×1' : `×${d.count}`;
+  b.append(
+    h('span', 'pc-hd', null, [h('span', 'pc-cost', null, [h('small', null, cl), document.createTextNode(cv)]), h('span', 'pc-title', null, [h('small', null, k[2]), nm]), ib]),
+    art,
+    h('span', 'pc-fx', g ? '建物の費用として捨てる。点にはならない。' : NE.text(key)),
+    h('span', 'pc-ft', null, [
+      h('span', null, d ? `${left}　${idx}` : left),
+      d ? h('span', 'pc-vp', null, [h('small', null, '資産'), document.createTextNode(d.value)]) : h('span', null, idx),
+    ]));
   return b;
 }
 function icon(d) {
@@ -113,25 +153,13 @@ function icon(d) {
   return svg;
 }
 function posterCard(c, cls, fn, disabled) {
+  const b = btn('', 'card ' + cls, fn, disabled);
   const d = c === 'g' ? null : NE.BLD[c];
   const k = KIND[c === 'g' ? 'g' : d.fac ? 'fac' : d.cat || 'shop'];
-  const b = btn('', 'card ' + cls, fn, disabled);
   b.style.setProperty('--bg', k[0]);
   b.style.setProperty('--fg', k[1]);
   b.title = cardInfo(c);
-  const svg = icon(k[3]);
-  const hd = h('span', 'c-hd', null, [
-    h('span', 'c-cost', null, [h('small', null, c === 'g' ? 'GOODS' : '建設'), document.createTextNode(c === 'g' ? '―' : d.cost)]),
-    svg,
-  ]);
-  if (d && d.nosell) hd.append(h('span', 'c-ns', '売れない'));
-  b.append(hd, h('span', 'c-nm', NE.cardName(c)),
-    h('span', 'c-fx', c === 'g' ? '建物の費用として捨てる。点にはならない。' : NE.text(c)),
-    h('span', 'c-ft', null, [
-      h('span', null, c === 'g' ? '共通' : `${k[2]} ×${d.count}`),
-      h('span', 'c-vp', null, d ? [h('small', null, '資産'), document.createTextNode(d.value)] : []),
-    ]));
-  return b;
+  return face(b, c);
 }
 
 function title() {

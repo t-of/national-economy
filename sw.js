@@ -9,7 +9,7 @@
 // ブラウザの HTTP キャッシュを通さない（install は reload、fetch は no-cache）。古い main.js と新しい index.html が混ざって動かなくなるのを防ぐ。
 
 const PREFIX = 'national-economy-';
-const VERSION = 'v11';
+const VERSION = 'v12';
 const CACHE = `${PREFIX}${VERSION}`;
 const FONT_CACHE = `${PREFIX}fonts`;
 
@@ -18,6 +18,7 @@ const SHELL = [
   './index.html',
   './style.css',
   './engine.js',
+  './art.js',
   './main.js',
   './manifest.webmanifest',
   './webapp-kit/webapp-kit.css',
