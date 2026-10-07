@@ -329,6 +329,7 @@ function render() {
       on.style.setProperty('--ov', s.occ.length > 3 ? '-22cqw' : '-8cqw'); // 多いほど重ねる
       c.querySelector('.pc-art').append(on);
     }
+    c.classList.toggle('dim', my && !ui && !NE.canUse(G, { pub: s.uid }));
     pub.append(c);
   }
   kids.push(pub);
@@ -346,6 +347,7 @@ function render() {
     if (ui && ui.need && ui.need.build != null && (ui.build == null || ui.build === i)) ok = c !== 'g' && NE.buildCost(c, ui.need.build) <= me.hand.length - 1;
     else if (ui && ui.need && ui.need.build != null && ui.build != null) ok = i !== ui.build;
     const b = posterCard(c, '', () => tapCard(i, me), !ok);
+    b.classList.toggle('dim', !!ui && !ok);
     b.classList.toggle('sel', sel.includes(i));
     b.classList.toggle('build', ui && ui.build === i);
     hand.append(b);
@@ -372,6 +374,7 @@ function render() {
       const ok = p.human && my && !ui && NE.canUse(G, { own: idx });
       const c = miniCard(b.key, () => clickWork({ own: idx }), !ok, d.name, [h('span', null, b.used ? '使用済み' : ''), h('span', 'c-vp', null, [h('small', null, '資産'), document.createTextNode(d.value)])]);
       c.classList.toggle('used', b.used);
+      c.classList.toggle('dim', p.human && my && !ui && !ok);
       bs.append(c);
     });
     if (!p.bld.length) bs.append(h('small', 'muted', '建物なし'));

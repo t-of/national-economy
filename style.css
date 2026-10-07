@@ -75,7 +75,9 @@ button.big:disabled, button:disabled { opacity: 0.4; }
 
 /* 工業ポスター風のカード（63:88）。--bg と --fg は main.js が種類ごとに入れる */
 .card { --ink: #1d1d1d; width: 126px; aspect-ratio: 63 / 88; padding: 0; overflow: hidden; display: flex; flex-direction: column; text-align: left; gap: 0; min-height: 0; border-radius: 8px; border: 2px solid var(--ink); background: #fbf9f4; color: var(--ink); font-family: 'Zen Kaku Gothic New', system-ui, -apple-system, 'Hiragino Sans', 'Noto Sans JP', sans-serif; cursor: pointer; }
-.card:disabled { opacity: .45; }
+/* 暗くするのは自分の番で選べないカードだけ（main.js が .dim を付ける）。押せないだけのカードは明るいまま */
+.card:disabled { opacity: 1; cursor: default; }
+.card.dim { opacity: .4; filter: grayscale(.6); }
 .card.sel { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent), 0 0 14px 3px rgba(255, 211, 92, .7); }
 .card.build { border-color: #6cc6ff; box-shadow: 0 0 0 3px #6cc6ff, 0 0 14px 3px rgba(108, 198, 255, .7); }
 .card .c-hd { flex: 0 0 47%; position: relative; padding: 6px; background: var(--bg); color: var(--fg); display: block; }
@@ -107,7 +109,6 @@ button.big:disabled, button:disabled { opacity: 0.4; }
 .card.mini .c-fx { display: block; flex: 1; padding-bottom: 4px; }
 .card.mini .c-ft { min-height: 18px; }
 .card.mini .c-vp { font-size: 14px; }
-.card.used { opacity: .5; }
 
 /* 労働者のコマ */
 .mp { width: 20px; height: 20px; fill: currentColor; stroke: #1d1d1d; stroke-width: 1.2; flex: none; }
