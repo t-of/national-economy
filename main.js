@@ -25,6 +25,76 @@ function setAudioSession(soundOn) {
   try { if (navigator.audioSession) navigator.audioSession.type = soundOn ? 'playback' : 'auto'; } catch { /* 対応していない */ }
 }
 
+// 音のオン・オフ（既定はオン）。効果音は Web Audio で作る
+const soundBtn = document.getElementById('soundBtn');
+let soundOn = load('sound', true);
+function setSound(on) {
+  soundOn = on;
+  soundBtn.setAttribute('aria-pressed', String(on));
+  soundBtn.textContent = on ? '音 オン' : '音 オフ';
+  save('sound', on);
+  setAudioSession(on);
+}
+setSound(soundOn);
+soundBtn.addEventListener('click', () => { setSound(!soundOn); sfx('tap'); });
+let audioCtx = null;
+function ctx() {
+  if (!audioCtx) { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); setAudioSession(true); }
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+// 単音を短い音量の山にして鳴らす
+function tone(c, freq, { type = 'sine', peak = 0.12, decay = 0.12, delay = 0, slideTo } = {}) {
+  const o = c.createOscillator(), g = c.createGain(), t = c.currentTime + delay;
+  o.type = type; o.frequency.setValueAtTime(freq, t);
+  if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, t + decay);
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(peak, t + 0.004);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + decay);
+  o.connect(g).connect(c.destination);
+  o.start(t); o.stop(t + decay + 0.05);
+}
+// 雑音をフィルタに通して短く鳴らす（紙・木の音）
+function noise(c, { type = 'bandpass', freq = 2000, peak = 0.15, decay = 0.06, delay = 0 } = {}) {
+  const n = Math.floor(c.sampleRate * (decay + 0.02)), buf = c.createBuffer(1, n, c.sampleRate), d = buf.getChannelData(0);
+  for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+  const src = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain(), t = c.currentTime + delay;
+  src.buffer = buf; f.type = type; f.frequency.value = freq;
+  g.gain.setValueAtTime(peak, t);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + decay);
+  src.connect(f).connect(g).connect(c.destination);
+  src.start(t);
+}
+const SOUND = {
+  tap: (c) => tone(c, 880, { type: 'triangle', peak: 0.06, decay: 0.05 }),
+  card: (c) => noise(c, { type: 'highpass', freq: 2500, peak: 0.12, decay: 0.07 }), // カードを選ぶ・捨てる
+  place: (c) => { tone(c, 180, { peak: 0.25, decay: 0.08 }); noise(c, { type: 'lowpass', freq: 900, peak: 0.12, decay: 0.05 }); }, // コマを置くコトッ
+  build: (c) => [0, 0.11].forEach((delay) => { tone(c, 110, { peak: 0.3, decay: 0.1, delay }); noise(c, { type: 'lowpass', freq: 500, peak: 0.22, decay: 0.07, delay }); }), // 木づちトントン
+  coin: (c) => [0, 0.07].forEach((delay, i) => tone(c, 1900 + i * 600, { type: 'triangle', peak: 0.08, decay: 0.18, delay })), // チャリン
+  wage: (c) => tone(c, 660, { type: 'square', peak: 0.04, decay: 0.2, slideTo: 330 }), // 払う
+  round: (c) => [523, 784].forEach((f, i) => tone(c, f, { type: 'triangle', peak: 0.1, decay: 0.35, delay: i * 0.12 })), // 次のラウンドのベル
+  win: (c) => [523, 659, 784, 1047].forEach((f, i) => tone(c, f, { type: 'triangle', peak: 0.12, decay: 0.4, delay: i * 0.12 })),
+  lose: (c) => [392, 330, 262].forEach((f, i) => tone(c, f, { type: 'triangle', peak: 0.1, decay: 0.4, delay: i * 0.18 })),
+};
+function sfx(name) {
+  if (!soundOn) return;
+  try { SOUND[name](ctx()); } catch { /* 音が出せなくても遊べる */ }
+}
+// 1 手進めて、前後の差で音を選ぶ（建てた > ラウンドが進んだ > お金が増えた > 置いた）
+function step(a) {
+  const before = { round: G.round, cash: G.players.map((p) => p.cash), bld: G.players.map((p) => p.bld.length) };
+  NE.apply(G, a);
+  if (G.over) {
+    const best = Math.max(...G.players.map(NE.score));
+    return sfx(G.players.some((p) => p.human) ? (G.players.some((p) => p.human && NE.score(p) === best) ? 'win' : 'lose') : 'win');
+  }
+  if (G.players.some((p, i) => p.bld.length > before.bld[i])) return sfx('build');
+  if (G.round !== before.round) return sfx('round');
+  if (G.players.some((p, i) => p.cash > before.cash[i])) return sfx('coin');
+  if (G.players.some((p, i) => p.cash < before.cash[i])) return sfx('wage');
+  sfx(a.kind === 'place' ? 'place' : 'card');
+}
+
 // ---- ここからアプリ本体 ----
 // ルールは engine.js（NE）。ここは画面と操作だけ。外から来る文字は使わないが、描画はすべて textContent。
 const COLORS = ['#ffd35c', '#6cc6ff', '#ff8a7a', '#9be37a'];
@@ -183,6 +253,7 @@ function title() {
 }
 
 function start(n, watch) {
+  sfx('round');
   G = NE.create(n);
   // 観戦: 全員 CPU にする（あなたの席も CPU が打つ）
   if (watch) G.players.forEach((p, i) => { p.human = false; p.name = `CPU${i + 1}`; });
@@ -194,7 +265,7 @@ const mine = () => G && !G.over && G.players[G.actor].human;
 
 function act(a) {
   ui = null;
-  NE.apply(G, a);
+  step(a);
   render();
 }
 
@@ -202,6 +273,7 @@ function clickWork(w) {
   const need = NE.needs(G, w);
   if (!need.disc && need.build == null) return act({ kind: 'place', ...w });
   ui = { w, need, sel: [], build: null };
+  sfx('tap');
   render();
 }
 
@@ -217,6 +289,7 @@ function tapCard(i, me) {
     ui.build = ui.build === i ? null : i; ui.sel = [];
   } else if (ui.sel.includes(i)) ui.sel = ui.sel.filter((x) => x !== i);
   else if (ui.sel.length < want(me)) ui.sel.push(i);
+  sfx('card');
   render();
 }
 
@@ -325,7 +398,8 @@ function render() {
   stage.replaceChildren(h('div', 'col-main', null, kids), h('div', 'col-side', null, side));
   fitPC();
 
-  if (!G.over && !my) timer = setTimeout(() => { NE.apply(G, NE.cpuAct(G)); render(); }, me.human ? 650 : (SPEEDS[speed] || SPEEDS[1])[0]);
+  // 観戦の「すぐ」は音を鳴らさない（鳴りっぱなしになる）
+  if (!G.over && !my) timer = setTimeout(() => { const a = NE.cpuAct(G); if (me.human || speed < 3) step(a); else NE.apply(G, a); render(); }, me.human ? 650 : (SPEEDS[speed] || SPEEDS[1])[0]);
 }
 
 // PC（2 列）のとき、公共の職場が縦に収まるまでカードを小さくし、右の列があふれたら建物を効果の文なし → 1 行の札と順に縮める
