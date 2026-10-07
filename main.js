@@ -148,6 +148,14 @@ function meeple(color, cls) {
   m.style.color = color;
   return m;
 }
+// 機械人形のコマ（四角い頭と体）
+const DOLL = 'M11 2h2v3h-2zM7 5h10v6H7zM5 12h14v8H5z';
+function doll(color, cls) {
+  const m = icon(DOLL);
+  m.setAttribute('class', 'mp doll ' + (cls || ''));
+  m.style.color = color;
+  return m;
+}
 // 盤面の部品: お金・未払い賃金・点・山札などの札
 function chip(cls, label, value, tip) {
   const c = h('span', 'chip ' + cls, null, [h('small', null, label), h('b', null, String(value))]);
@@ -289,6 +297,14 @@ function act(a) {
 
 function clickWork(w) {
   const need = NE.needs(G, w);
+  if (!need.choice && !need.two && !need.disc && need.build == null) return act({ kind: 'place', ...w });
+  ui = { w, need, sel: [], builds: [] };
+  sfx('tap');
+  render();
+}
+// 選ぶ効果（農村など）の 1 つを選んだ
+function pickOpt(opt) {
+  const w = { ...ui.w, opt }, need = NE.needs(G, w);
   if (!need.disc && need.build == null) return act({ kind: 'place', ...w });
   ui = { w, need, sel: [], builds: [] };
   sfx('tap');
@@ -428,6 +444,7 @@ function render() {
         h('span', 'workers', null, [
           ...Array.from({ length: p.workers }, (_, j) => meeple(COLORS[i], j < p.free ? '' : 'used')),
           ...Array.from({ length: p.hired }, () => meeple(COLORS[i], 'temp')),
+          ...Array.from({ length: p.dolls || 0 }, (_, j) => doll(COLORS[i], j < (p.dollFree || 0) ? '' : 'used')),
         ]),
         ...(p.stash ? [chip('deck', '取り置き', p.stash, '醸造所の消費財。次のラウンドのはじめに手札へ入る')] : []),
         chip('deck', '手札', p.hand.length),
@@ -463,12 +480,20 @@ function fitPC() {
 }
 
 function choicePanel(me) {
+  if (ui.need && ui.need.choice) {
+    return h('section', 'choice', null, [
+      h('div', null, '使う効果を選ぶ' + (ui.need.two ? '（労働者 2 人を同時に置く）' : '')),
+      ...ui.need.choice.map((o, i) => btn(NE.effText(o), 'big', () => pickOpt(i), !NE.canUse(G, { ...ui.w, opt: i }))),
+      btn('やめる', 'pill', () => { ui = null; render(); }),
+    ]);
+  }
   const n = want(me);
   let msg;
   if (ui.trim) msg = `手札が多い。捨てるカードを ${n} 枚選ぶ（${ui.sel.length}/${n}）`;
   else if (ui.need.build != null && n == null) msg = ui.need.build2 ? `建てる建物カードを手札から 2 枚選ぶ（${ui.builds.length}/2）` : '建てる建物カードを手札から選ぶ';
   else if (ui.need.build != null) msg = `${ui.builds.map((x) => NE.cardName(me.hand[x])).join('・')} を建てる。捨てるカードを ${n} 枚選ぶ（${ui.sel.length}/${n}）`;
-  else msg = `捨てるカードを ${n} 枚選ぶ（${ui.sel.length}/${n}）`;
+  else if (!n) msg = '労働者 2 人を同時に置く';
+  else msg = `捨てるカードを ${n} 枚選ぶ（${ui.sel.length}/${n}）` + (ui.need.two ? ' 労働者 2 人を同時に置く' : '');
   const go = () => (ui.trim ? act({ kind: 'trim', disc: ui.sel }) : act({ kind: 'place', ...ui.w, disc: ui.sel, build: ui.builds[0], build2: ui.builds[1] }));
   return h('section', 'choice', null, [
     h('div', null, msg),

@@ -67,6 +67,53 @@ function check(G) {
   P.vp = 5; assert.equal(NE.buildCost('m_cathedral', 0, P), 6);
 }
 
+// 場面: グローリーの仕組み（人形・2 人同時・遺跡・2 択）。カードは G2 で入るので、試験用の建物を足して使う
+{
+  Object.assign(NE.BLD, {
+    t_doll: { ed: 'x', name: '人形', cost: 0, value: 2, count: 0, fac: true, nosell: true, e: null, onBuild: { doll: 1 } },
+    t_two: { ed: 'x', name: '二人', cost: 3, value: 14, count: 0, cat: 'agri', e: { drawG: 5, two: true } },
+    t_vil: { ed: 'x', name: '農村', cost: 1, value: 6, count: 0, cat: 'agri', e: { choice: [{ drawG: 2 }, { disc: 2, drawB: 3 }] } },
+    t_hq: { ed: 'x', name: '建てる', cost: 1, value: 6, count: 0, e: { build: 0 } },
+  });
+  const mk = (hand, keys, ed = 'g') => { const G = NE.create(2, NE.seeded(1), 'normal', ed); const P = G.players[G.actor]; P.hand = hand; P.bld = keys.map((key) => ({ key, used: false })); return { G, P }; };
+  // 機械人形: 建てるとすぐ働く。賃金・労働者の数に数えない
+  let { G, P } = mk(['t_doll', 'farm'], ['t_hq']);
+  assert.ok(NE.apply(G, { kind: 'place', own: 0, build: 0, disc: [] }), '人形を建てる');
+  assert.equal(P.dolls, 1); assert.equal(P.dollFree, 1); assert.equal(G.dollLeft, 4);
+  G.turn = G.actor = G.players.indexOf(P); // 人形はすぐ働ける: 番が回っても残りがあれば置ける
+  assert.ok(NE.apply(G, { kind: 'place', pub: G.pub[0].uid }), '置く（人形から先に使う）'); assert.equal(P.dollFree, 0); assert.equal(P.free, 1); // 建てるのに 1 人使った
+  G.turn = G.actor = G.players.indexOf(P);
+  assert.ok(NE.apply(G, { kind: 'place', pub: G.pub[1].uid }), '労働者を置く'); assert.equal(P.free, 0);
+  // 賃金は労働者 2 人分だけ（人形は数えない）
+  ({ G, P } = mk([], [])); G.players.forEach((p) => { p.human = false; p.free = 0; }); P.dolls = 3; P.dollFree = 0; P.cash = 4; P.free = 1;
+  const q = G.pub.find((x) => x.key === 'quarry'); NE.apply(G, { kind: 'place', pub: q.uid });
+  assert.equal(G.round, 2, 'ラウンドが進んだ'); assert.equal(P.debt, 0); assert.equal(P.cash, 0, '賃金 2×2 人だけ'); assert.equal(P.dollFree, 3, '次のラウンドは人形も働く');
+  assert.equal(NE.maxWorkers(P), 5, '人形は労働者の上限に数えない');
+  // 2 人同時の職場
+  ({ G, P } = mk([], ['t_two'])); P.free = 2; P.dollFree = 0;
+  assert.ok(NE.canUse(G, { own: 0 })); assert.ok(NE.apply(G, { kind: 'place', own: 0 }), '2 人使う'); assert.equal(P.hand.length, 5);
+  assert.equal(P.free, 0);
+  ({ G, P } = mk([], ['t_two'])); P.free = 1; P.dollFree = 0;
+  assert.ok(!NE.canUse(G, { own: 0 }), '1 人では置けない');
+  P.dollFree = 1; assert.ok(NE.apply(G, { kind: 'place', own: 0 }), '労働者 + 人形で 2 人'); assert.equal(P.free + P.dollFree, 0);
+  // 遺跡: 消費財 1 枚 + 勝利点 1。グローリーだけ最初からある
+  ({ G, P } = mk([], []));
+  const ru = G.pub.find((s) => s.key === 'ruins'); assert.ok(ru, 'グローリーには遺跡がある');
+  assert.ok(!NE.create(2, NE.seeded(1), 'normal', 'm').pub.some((s) => s.key === 'ruins'), 'メセナにはない');
+  P.free = 1; assert.ok(NE.apply(G, { kind: 'place', pub: ru.uid })); assert.equal(P.hand.length, 1); assert.equal(P.vp, 1); assert.equal(G.vpLeft, 29);
+  // 2 択
+  ({ G, P } = mk(['farm', 'farm', 'coffee'], ['t_vil'])); P.free = 2;
+  assert.ok(!NE.apply(G, { kind: 'place', own: 0 }), '選ばずには使えない');
+  assert.ok(NE.needs(G, { own: 0 }).choice.length === 2);
+  assert.ok(NE.apply(G, { kind: 'place', own: 0, opt: 0 }), '消費財 2 枚'); assert.equal(P.hand.length, 5);
+  ({ G, P } = mk(['farm', 'farm', 'coffee'], ['t_vil'], 'm')); P.free = 2; // グローリーの山はまだ空なのでメセナで
+  assert.ok(!NE.apply(G, { kind: 'place', own: 0, opt: 1, disc: [0] }), '2 枚捨てないと不可');
+  assert.ok(NE.apply(G, { kind: 'place', own: 0, opt: 1, disc: [0, 1] }), '2 枚捨てて建物 3 枚'); assert.equal(P.hand.length, 4);
+  ({ G, P } = mk(['farm'], ['t_vil'])); P.free = 2;
+  assert.ok(!NE.canUse(G, { own: 0, opt: 1 }) && NE.canUse(G, { own: 0, opt: 0 }), '手札が足りない側は選べない');
+  for (const k of ['t_doll', 't_two', 't_vil', 't_hq']) delete NE.BLD[k];
+}
+
 const rows = [];
 for (const [ed, n] of [['p', 2], ['p', 3], ['p', 4], ['m', 2], ['m', 3], ['m', 4]]) {
   let sum = 0, win = 0, bld = 0, debt = 0, debtGames = 0, steps = 0, sold = 0;
