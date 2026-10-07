@@ -137,6 +137,8 @@ function title() {
     h('p', 'muted', '手札の建物カードを、別の手札を捨てて建てる。9 ラウンド後、建物の資産価値＋現金−未払い賃金×3 で勝負。'),
     h('p', null, '人数を選んではじめる'),
     h('div', 'row', null, [2, 3, 4].map((n) => btn(`${n} 人`, 'big', () => start(n)))),
+    h('p', null, 'CPU 同士の対戦を観る'),
+    h('div', 'row', null, [2, 3, 4].map((n) => btn(`CPU ${n} 人`, 'pill', () => start(n, true)))),
     h('details', 'rules', null, [h('summary', null, '遊び方'), h('div', null, null, [
       h('p', null, '手番ごとに労働者 1 人を、公共の職場か自分の建物に置いてすぐ効果を使う。全員が置き終えたら賃金を払う。'),
       h('p', null, '建物は「大工」などで建てる。手札の建物カードを選び、費用の枚数だけ別の手札を捨てる（消費財は捨てるためのカード）。'),
@@ -146,8 +148,10 @@ function title() {
   ]));
 }
 
-function start(n) {
+function start(n, watch) {
   G = NE.create(n);
+  // 観戦: 全員 CPU にする（あなたの席も CPU が打つ）
+  if (watch) G.players.forEach((p, i) => { p.human = false; p.name = `CPU${i + 1}`; });
   ui = null;
   render();
 }
@@ -232,7 +236,9 @@ function render() {
     b.classList.toggle('build', ui && ui.build === i);
     hand.append(b);
   });
-  kids.push(h('section', 'player hand', null, [h('div', 'ph', null, [h('b', null, `手札 ${me.hand.length} 枚（上限 ${NE.handLimit(me)}）`)]), hand]));
+  const watch = !me.human;
+  if (watch && !G.over) side.push(btn('観戦をやめる', 'pill', title));
+  if (!watch) kids.push(h('section', 'player hand', null, [h('div', 'ph', null, [h('b', null, `手札 ${me.hand.length} 枚（上限 ${NE.handLimit(me)}）`)]), hand]));
 
   // プレイヤー
   G.players.forEach((p, i) => {
