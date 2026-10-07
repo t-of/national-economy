@@ -141,7 +141,7 @@ button.big:disabled, button:disabled { opacity: 0.4; }
 .turn { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 700; }
 
 /* 新しいカードの顔（手札・公共の職場）。寸法は card の幅を 315 とした割合（cqw） */
-.card:not(.mini) { container-type: inline-size; border-radius: 4.8cqw; }
+.card:not(.mini) { container-type: inline-size; }
 .pc-hd { display: flex; align-items: center; gap: 3.2cqw; padding: 3.2cqw 3.8cqw; height: 24.1cqw; box-sizing: border-box; flex: none; background: var(--bg); color: var(--fg); }
 .pc-cost, .pc-ib { width: 16.5cqw; height: 16.5cqw; box-sizing: border-box; flex: none; display: flex; align-items: center; justify-content: center; }
 .pc-cost { flex-direction: column; border-radius: 50%; background: #fbf9f4; color: #1d1d1d; border: .8cqw solid #1d1d1d; font-family: 'Dela Gothic One', system-ui, sans-serif; font-size: 7.6cqw; line-height: 1; }
