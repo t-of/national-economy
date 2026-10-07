@@ -32,6 +32,8 @@ const stage = document.getElementById('stage');
 let G = null;
 let ui = null; // 人の手番の途中の選択: { w, need, sel:[手札の添字], build } か { trim:true, sel }
 let timer = 0;
+const SPEEDS = [[1300, 'ゆっくり'], [650, 'ふつう'], [200, 'はやい'], [40, 'すぐ']];
+let speed = load('speed', 1); // 観戦の速さ（SPEEDS の添字）
 
 function h(tag, cls, text, kids) {
   const e = document.createElement(tag);
@@ -237,7 +239,14 @@ function render() {
     hand.append(b);
   });
   const watch = !me.human;
-  if (watch && !G.over) side.push(btn('観戦をやめる', 'pill', title));
+  if (watch && !G.over) side.push(h('div', 'row', null, [
+    ...SPEEDS.map(([, name], i) => {
+      const b = btn(name, 'pill', () => { speed = i; save('speed', i); render(); });
+      b.setAttribute('aria-pressed', String(i === speed));
+      return b;
+    }),
+    btn('観戦をやめる', 'pill', title),
+  ]));
   if (!watch) kids.push(h('section', 'player hand', null, [h('div', 'ph', null, [h('b', null, `手札 ${me.hand.length} 枚（上限 ${NE.handLimit(me)}）`)]), hand]));
 
   // プレイヤー
@@ -277,7 +286,7 @@ function render() {
   stage.replaceChildren(h('div', 'col-main', null, kids), h('div', 'col-side', null, side));
   fitPC();
 
-  if (!G.over && !my) timer = setTimeout(() => { NE.apply(G, NE.cpuAct(G)); render(); }, 650);
+  if (!G.over && !my) timer = setTimeout(() => { NE.apply(G, NE.cpuAct(G)); render(); }, me.human ? 650 : (SPEEDS[speed] || SPEEDS[1])[0]);
 }
 
 // PC（2 列）のとき、公共の職場が縦に収まるまでカードを小さくし、右の列があふれたら建物を効果の文なし → 1 行の札と順に縮める

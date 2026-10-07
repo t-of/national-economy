@@ -179,3 +179,4 @@ button.big:disabled, button:disabled { opacity: 0.4; }
 @media (min-width: 1024px) and (min-height: 600px) {
   .stage.game.tight2 .log { display: none; }
 }
+.pill[aria-pressed="true"] { background: #ffd35c; color: #1d1d1d; }
