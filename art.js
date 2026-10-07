@@ -716,6 +716,36 @@ const ART = {
 <rect x="242" y="50" width="16" height="28" fill="#3a3a3a"/>
 <rect x="246" y="56" width="8" height="8" fill="#d9d9d4"/>
 `,
+  settler: `
+<rect width="280" height="168" fill="#fbe7a1" stroke="none"/>
+<circle cx="214" cy="38" r="18" fill="#f2c230"/>
+<path d="M-2 118Q140 104 282 116v54H-2z" fill="#e0b02a"/>
+<path d="M-2 140l284-6v36H-2z" fill="#f2c230"/>
+<path d="M30 170l40-30M90 170l20-34M150 170l6-36M210 170l-12-36" fill="none" stroke="#c7951a" stroke-width="3"/>
+<rect x="176" y="86" width="52" height="32" fill="#fbf9f4"/>
+<path d="M170 88l32-24 32 24z" fill="#1d1d1d"/>
+<rect x="194" y="98" width="16" height="20" fill="#c7951a"/>
+<circle cx="84" cy="62" r="11" fill="#fbf9f4"/>
+<path d="M70 56h28l-4-10H74z" fill="#c7951a"/>
+<path d="M72 128l4-48c2-8 18-8 20 0l4 48z" fill="#f2c230"/>
+<path d="M80 128v22M92 128v22" fill="none" stroke-width="4"/>
+<path d="M104 90L132 70M126 62l16 12-6 8" fill="none" stroke-width="3"/>
+<path d="M40 150V120M40 124h16v8H40z" fill="#c63d2a"/>
+`,
+  twin: `
+<rect width="280" height="168" fill="#d9d9d4" stroke="none"/>
+<rect x="-2" y="136" width="284" height="34" fill="#8f8f8a"/>
+<path d="M28 136V84l42-30 42 30v52z" fill="#fbf9f4"/>
+<path d="M168 136V84l42-30 42 30v52z" fill="#fbf9f4"/>
+<rect x="56" y="104" width="28" height="32" fill="#3a3a3a"/>
+<rect x="196" y="104" width="28" height="32" fill="#3a3a3a"/>
+<rect x="38" y="90" width="14" height="14" fill="#8f8f8a"/>
+<rect x="178" y="90" width="14" height="14" fill="#8f8f8a"/>
+<path d="M60 70h20M200 70h20" fill="none"/>
+<path d="M112 136V30h6M118 30h50M126 30l-14 14M158 30l8 10" fill="none" stroke-width="3"/>
+<path d="M140 30v26M134 56h12v10h-12z" fill="#3a3a3a"/>
+<path d="M118 136h50" fill="none" stroke-width="3"/>
+`,
   m_garden: `
 <rect width="280" height="168" fill="#fbe7a1" stroke="none"/>
 <circle cx="236" cy="34" r="18" fill="#f2c230"/>
