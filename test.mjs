@@ -15,6 +15,27 @@ function check(G) {
   G.players.forEach((p) => { assert.ok(p.cash >= 0 && p.workers + p.hired <= NE.maxWorkers(p), '現金・労働者'); });
 }
 
+// 場面: 2 つ建て・費用 0・勝利点
+{
+  const mk = (hand, key) => { const G = NE.create(2, NE.seeded(1)); const P = G.players[G.actor]; P.hand = hand; P.bld = [{ key, used: false }]; P.free = 1; return { G, P }; };
+  let { G, P } = mk(['farm', 'farm', 'coffee'], 'twin');
+  assert.ok(NE.apply(G, { kind: 'place', own: 0, build: 0, build2: 1, disc: [2] }), '2 つ建て');
+  assert.deepEqual(P.bld.map((b) => b.key), ['twin', 'farm', 'farm']); assert.equal(P.hand.length, 0);
+  ({ G, P } = mk(['farm', 'coffee', 'steel'], 'twin'));
+  assert.ok(!NE.apply(G, { kind: 'place', own: 0, build: 0, build2: 2, disc: [1] }), '費用がちがう 2 枚は建てられない');
+  ({ G, P } = mk(['bigfarm', 'coffee'], 'settler'));
+  assert.ok(!NE.apply(G, { kind: 'place', own: 0, build: 1, disc: [] }), '開拓民は農業だけ');
+  assert.ok(NE.apply(G, { kind: 'place', own: 0, build: 0, disc: [] }), '費用 0');
+  assert.deepEqual(P.bld.map((b) => b.key), ['settler', 'bigfarm']);
+  assert.equal(NE.buildCost('steel', 0), 4);
+  NE.BLD.steel.costDown = (p) => p.bld.length; assert.equal(NE.buildCost('steel', 0, { bld: [1, 2] }), 2); delete NE.BLD.steel.costDown;
+  ({ G, P } = mk([], 'farm'));
+  G.vpLeft = 5; NE.giveVp(G, P, 4);
+  assert.equal(NE.vpPts(P), 11, '4 枚 = 11 点'); assert.equal(G.vpLeft, 1);
+  NE.giveVp(G, P, 3); assert.equal(P.vp, 5);
+  G.vpLeft = 0; assert.equal(NE.giveVp(G, P, 2), 0, '尽きたら 0'); assert.equal(P.vp, 5);
+}
+
 const rows = [];
 for (const n of [2, 3, 4]) {
   let sum = 0, win = 0, bld = 0, debt = 0, debtGames = 0, steps = 0, sold = 0;

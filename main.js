@@ -289,7 +289,7 @@ function act(a) {
 function clickWork(w) {
   const need = NE.needs(G, w);
   if (!need.disc && need.build == null) return act({ kind: 'place', ...w });
-  ui = { w, need, sel: [], build: null };
+  ui = { w, need, sel: [], builds: [] };
   sfx('tap');
   render();
 }
@@ -297,13 +297,13 @@ function clickWork(w) {
 // 選ぶ枚数（まだ建てる建物を選んでいなければ null）
 function want(me) {
   if (ui.trim) return me.hand.length - NE.handLimit(me);
-  if (ui.need.build != null) return ui.build == null ? null : NE.buildCost(me.hand[ui.build], ui.need.build);
+  if (ui.need.build != null) return ui.builds.length < (ui.need.build2 ? 2 : 1) ? null : NE.bcost(me, ui.need, me.hand[ui.builds[0]]);
   return ui.need.disc;
 }
 
 function tapCard(i, me) {
-  if (ui.need && ui.need.build != null && (ui.build == null || ui.build === i)) {
-    ui.build = ui.build === i ? null : i; ui.sel = [];
+  if (ui.need && ui.need.build != null && (ui.builds.length < (ui.need.build2 ? 2 : 1) || ui.builds.includes(i))) {
+    ui.builds = ui.builds.includes(i) ? ui.builds.filter((x) => x !== i) : ui.builds.concat(i); ui.sel = [];
   } else if (ui.sel.includes(i)) ui.sel = ui.sel.filter((x) => x !== i);
   else if (ui.sel.length < want(me)) ui.sel.push(i);
   sfx('card');
@@ -361,12 +361,15 @@ function render() {
   const hand = h('div', 'blds');
   me.hand.forEach((c, i) => {
     let ok = !!ui;
-    if (ui && ui.need && ui.need.build != null && (ui.build == null || ui.build === i)) ok = c !== 'g' && NE.buildCost(c, ui.need.build) <= me.hand.length - 1;
-    else if (ui && ui.need && ui.need.build != null && ui.build != null) ok = i !== ui.build;
+    const bn = ui && ui.need && ui.need.build != null;
+    if (bn && (ui.builds.length < (ui.need.build2 ? 2 : 1) || ui.builds.includes(i))) {
+      ok = NE.canBuildCard(ui.need, c) && NE.bcost(me, ui.need, c) <= me.hand.length - (ui.need.build2 ? 2 : 1);
+      if (ok && ui.builds.length && !ui.builds.includes(i)) ok = NE.bcost(me, ui.need, c) === NE.bcost(me, ui.need, me.hand[ui.builds[0]]); // 2 つ建ては同じ費用
+    } else if (bn) ok = !ui.builds.includes(i);
     const b = posterCard(c, '', () => tapCard(i, me), !ok);
     b.classList.toggle('dim', !!ui && !ok);
     b.classList.toggle('sel', sel.includes(i));
-    b.classList.toggle('build', ui && ui.build === i);
+    b.classList.toggle('build', !!(ui && ui.builds && ui.builds.includes(i)));
     hand.append(b);
   });
   const watch = !me.human;
@@ -456,10 +459,10 @@ function choicePanel(me) {
   const n = want(me);
   let msg;
   if (ui.trim) msg = `手札が多い。捨てるカードを ${n} 枚選ぶ（${ui.sel.length}/${n}）`;
-  else if (ui.need.build != null && ui.build == null) msg = '建てる建物カードを手札から選ぶ';
-  else if (ui.need.build != null) msg = `${NE.cardName(me.hand[ui.build])} を建てる。捨てるカードを ${n} 枚選ぶ（${ui.sel.length}/${n}）`;
+  else if (ui.need.build != null && n == null) msg = ui.need.build2 ? `建てる建物カードを手札から 2 枚選ぶ（${ui.builds.length}/2）` : '建てる建物カードを手札から選ぶ';
+  else if (ui.need.build != null) msg = `${ui.builds.map((x) => NE.cardName(me.hand[x])).join('・')} を建てる。捨てるカードを ${n} 枚選ぶ（${ui.sel.length}/${n}）`;
   else msg = `捨てるカードを ${n} 枚選ぶ（${ui.sel.length}/${n}）`;
-  const go = () => (ui.trim ? act({ kind: 'trim', disc: ui.sel }) : act({ kind: 'place', ...ui.w, disc: ui.sel, build: ui.build == null ? undefined : ui.build }));
+  const go = () => (ui.trim ? act({ kind: 'trim', disc: ui.sel }) : act({ kind: 'place', ...ui.w, disc: ui.sel, build: ui.builds[0], build2: ui.builds[1] }));
   return h('section', 'choice', null, [
     h('div', null, msg),
     h('div', 'row', null, [

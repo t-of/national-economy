@@ -1,6 +1,6 @@
 'use strict';
 // ナショナルエコノミー風のルール（画面を持たない）。ブラウザでは NE、Node では module.exports で使う。
-// 原作どおり（docs/private/specs/national-economy.md §1）。建物は開拓民・二胡市建設を除く 22 種 60 枚（この 2 つは段階 7 で足す）。
+// 原作どおり（docs/private/specs/national-economy.md §1）。建物は 24 種 64 枚（開拓民・二胡市建設を含む）。
 //
 // 原作ではっきりしないので推定で置いている所（※）:
 //   最終ラウンドの終わりは手札を捨てない（農協のため）※ / 建てた建物はそのラウンドからすぐ使える※
@@ -39,6 +39,11 @@ const NE = (() => {
     m: { goods: 22, vp: 20, pubStart: ['quarry', 'mine', 'school'] },
     g: { goods: 30, vp: 30, pubStart: ['quarry', 'mine', 'school'] },
   };
+  // 種類は 1 つとは限らないので配列で返す（cats があればそれ、なければ cat）
+  const cats = (d) => d.cats || (d.cat ? [d.cat] : []);
+  // 勝利点トークン: 3 枚ごとに 10 点、余りは 1 枚 1 点。G.vpLeft が尽きたらもらえない
+  const vpPts = (p) => 10 * Math.floor((p.vp || 0) / 3) + ((p.vp || 0) % 3);
+  const giveVp = (G, P, n) => { const x = Math.max(0, Math.min(n, G.vpLeft || 0)); G.vpLeft = (G.vpLeft || 0) - x; P.vp = (P.vp || 0) + x; return x; };
   const goodsIn = (p) => p.hand.filter((c) => c === 'g').length;
   const BLD = {
     farm: { name: '農場', cost: 1, value: 6, count: 8, cat: 'agri', e: { drawG: 2 } },
@@ -61,7 +66,9 @@ const NE = (() => {
     union: { name: '労働組合', cost: 4, value: 0, count: 1, fac: true, e: null, text: '終了時、労働者 1 人につき +6', end: (p) => 6 * (p.workers + p.hired) },
     mansion: { name: '邸宅', cost: 4, value: 28, count: 1, fac: true, e: null, text: '効果なし' },
     car: { name: '自動車工場', cost: 5, value: 24, count: 3, cat: 'ind', e: { disc: 3, drawB: 7 } },
-    rail: { name: '鉄道', cost: 5, value: 18, count: 1, fac: true, e: null, text: '終了時、工業の建物 1 つにつき +8', end: (p) => 8 * p.bld.filter((b) => BLD[b.key].cat === 'ind').length },
+    rail: { name: '鉄道', cost: 5, value: 18, count: 1, fac: true, e: null, text: '終了時、工業の建物 1 つにつき +8', end: (p) => 8 * p.bld.filter((b) => cats(BLD[b.key]).includes('ind')).length },
+    settler: { name: '開拓民', cost: 3, value: 14, count: 2, e: { build: 0, free: true, only: (d) => cats(d).includes('agri'), onlyText: '農業の建物を' } },
+    twin: { name: '二胡市建設', cost: 5, value: 20, count: 2, e: { build: 0, build2: true } },
     hq: { name: '本社ビル', cost: 5, value: 20, count: 1, fac: true, e: null, text: '終了時、施設 1 つにつき +6', end: (p) => 6 * p.bld.filter((b) => BLD[b.key].fac).length },
   };
   for (const d of Object.values(BLD)) { d.ed = 'p'; if (d.fac) d.nosell = true; }
@@ -74,7 +81,8 @@ const NE = (() => {
     if (!e) return '効果なし';
     const t = [];
     if (e.disc) t.push(`${e.disc} 枚捨てて`);
-    if (e.build != null) t.push(e.build ? `建てる（費用 −${e.build}）` : '建てる');
+    if (e.build != null) t.push(`${e.onlyText || ''}${e.build2 ? '同じ費用の建物 2 つを 1 つ分の費用で' : ''}${e.free ? '費用 0 で' : ''}` + (e.build ? `建てる（費用 −${e.build}）` : '建てる'));
+    if (e.vp) t.push(`勝利点 ${e.vp} 枚`);
     if (e.then) t.push(`建物を ${e.then} 枚引く`);
     if (e.look) t.push(`建物の山の上 ${e.look} 枚から 1 枚取る`);
     if (e.drawB) t.push(e.empty ? `建物を ${e.drawB} 枚（手札 0 なら ${e.empty} 枚）引く` : `建物を ${e.drawB} 枚引く`);
@@ -95,7 +103,7 @@ const NE = (() => {
   const unpaid = (p) => Math.max(0, p.debt - passive(p, 'law')); // 法律事務所で捨てたあとの未払い賃金
   const penalty = () => 3;
   const endBonus = (p) => p.bld.reduce((s, b) => s + (BLD[b.key].end ? BLD[b.key].end(p) : 0), 0);
-  const score = (p) => p.bld.reduce((s, b) => s + BLD[b.key].value, 0) + endBonus(p) + p.cash - unpaid(p) * penalty();
+  const score = (p) => p.bld.reduce((s, b) => s + BLD[b.key].value, 0) + endBonus(p) + vpPts(p) + p.cash - unpaid(p) * penalty();
 
   // 種つき乱数（mulberry32）。保存するときは状態ごと持つ
   function seeded(seed) {
@@ -128,7 +136,7 @@ const NE = (() => {
     for (let i = 0; i < n; i++) {
       const cash = START_CASH[(i - G.start + n) % n];
       G.cash0 += cash;
-      G.players.push({ name: i === 0 ? 'あなた' : `CPU${i}`, human: i === 0, cash, debt: 0, workers: 2, hired: 0, free: 0, hand: [], bld: [] });
+      G.players.push({ name: i === 0 ? 'あなた' : `CPU${i}`, human: i === 0, cash, debt: 0, workers: 2, hired: 0, free: 0, hand: [], bld: [], vp: 0 });
       drawB(G, G.players[i], START_HAND);
     }
     startRound(G);
@@ -202,7 +210,7 @@ const NE = (() => {
   const keepValue = (c) => (c === 'g' ? 0 : BLD[c].value + 1);
   // 手札から捨てる n 枚の添字（価値の低い順。skip は除く）
   function cheapest(hand, n, skip) {
-    return hand.map((c, i) => i).filter((i) => i !== skip).sort((a, b) => keepValue(hand[a]) - keepValue(hand[b])).slice(0, n);
+    return hand.map((c, i) => i).filter((i) => ![].concat(skip).includes(i)).sort((a, b) => keepValue(hand[a]) - keepValue(hand[b])).slice(0, n);
   }
 
   function nextTurn(G) {
@@ -223,9 +231,22 @@ const NE = (() => {
   // 画面が使う: 手札から捨てる枚数と、建てる効果か
   function needs(G, w) {
     const sp = spot(G, G.actor, w);
-    return sp && sp.e ? { disc: sp.e.disc || 0, build: sp.e.build != null ? sp.e.build : null } : null;
+    return sp && sp.e ? { disc: sp.e.disc || 0, build: sp.e.build != null ? sp.e.build : null, build2: !!sp.e.build2, free: !!sp.e.free, only: sp.e.only } : null;
   }
-  const buildCost = (c, off) => Math.max(0, BLD[c].cost - off);
+  // 費用。off=職場の割引、P を渡すと建物の costDown(P) も引く
+  const buildCost = (c, off, P) => Math.max(0, BLD[c].cost - off - (P && BLD[c].costDown ? BLD[c].costDown(P) : 0));
+  const canBuildCard = (n, c) => isBld(c) && (!n.only || n.only(BLD[c]));
+  const bcost = (P, n, c) => (n.free ? 0 : buildCost(c, n.build, P));
+  // 建てられる手札の組（build2 なら同じ費用の 2 枚）と、捨てる枚数
+  function buildSets(P, n) {
+    const h = P.hand, ok = h.map((c, i) => i).filter((i) => canBuildCard(n, h[i])), out = [];
+    for (const i of ok) {
+      const cost = bcost(P, n, h[i]);
+      if (!n.build2) { if (cost <= h.length - 1) out.push({ idx: [i], cost }); continue; }
+      for (const j of ok) if (j > i && cost === bcost(P, n, h[j]) && cost <= h.length - 2) out.push({ idx: [i, j], cost });
+    }
+    return out;
+  }
   function canUse(G, w) {
     if (G.phase !== 'place') return false;
     const P = G.players[G.actor], sp = spot(G, G.actor, w);
@@ -236,7 +257,7 @@ const NE = (() => {
     if (e.fill && P.hand.length >= e.fill) return false;
     if (e.hire && total(P) >= maxWorkers(P)) return false;
     if (e.hireTo && total(P) >= Math.min(e.hireTo, maxWorkers(P))) return false;
-    if (e.build != null && !P.hand.some((c) => isBld(c) && buildCost(c, e.build) <= P.hand.length - 1)) return false;
+    if (e.build != null && !buildSets(P, e).length) return false;
     return true;
   }
 
@@ -258,20 +279,21 @@ const NE = (() => {
     if (a.kind !== 'place' || !canUse(G, a)) return false;
     const sp = spot(G, pi, a), e = sp.e;
     const disc = a.disc || [];
-    let bi = null;
+    let bs = [];
     if (e.build != null) {
-      bi = a.build;
-      if (!Number.isInteger(bi) || !P.hand[bi] || !isBld(P.hand[bi]) || disc.includes(bi)) return false;
-      if (!ok(disc, buildCost(P.hand[bi], e.build))) return false;
+      bs = e.build2 ? [a.build, a.build2] : [a.build];
+      const set = new Set(bs).size === bs.length && buildSets(P, e).find((x) => x.idx.length === bs.length && bs.every((i) => x.idx.includes(i)));
+      if (!set || disc.some((x) => bs.includes(x)) || !ok(disc, set.cost)) return false;
     } else if (!ok(disc, e.disc || 0)) return false;
     // 実行
     const name = sp.s ? defOf(sp.s.key).name : BLD[sp.b.key].name;
-    const built = bi == null ? null : P.hand[bi];
-    disc.concat(bi == null ? [] : [bi]).sort((x, y) => y - x).forEach((x) => { const c = P.hand.splice(x, 1)[0]; if (x !== bi) discardCard(G, c); });
+    const built = bs.map((i) => P.hand[i]);
+    disc.concat(bs).sort((x, y) => y - x).forEach((x) => { const c = P.hand.splice(x, 1)[0]; if (!bs.includes(x)) discardCard(G, c); });
     P.free--;
     if (sp.s) sp.s.occ.push(pi); else sp.b.used = true;
     let msg = `${P.name}: ${name}`;
-    if (built) { P.bld.push({ key: built, used: false }); msg += ` で ${BLD[built].name} を建てた`; }
+    if (built.length) { built.forEach((k) => P.bld.push({ key: k, used: false })); msg += ` で ${built.map((k) => BLD[k].name).join('・')} を建てた`; }
+    if (e.vp) msg += ` 勝利点 ${giveVp(G, P, e.vp)} 枚`;
     if (e.take) { P.cash += e.take; G.house -= e.take; msg += ` 家計から ${e.take}`; }
     const nb = e.drawB ? (e.empty && !P.hand.length ? e.empty : e.drawB) : 0;
     if (nb) { drawB(G, P, nb); msg += ` 建物 ${nb} 枚`; }
@@ -311,6 +333,7 @@ const NE = (() => {
     if (e.drawG) draw(e.drawG, TUNE.card * 0.8);
     if (e.fill) draw(Math.max(0, e.fill - P.hand.length), TUNE.card * 0.8);
     if (e.look) v += (TUNE.card + 3) * cs;
+    if (e.vp) v += e.vp * 3.3; // 3 枚そろうと 10 点（持っている枚数での調整は E3 以降）
     if (e.build != null) v += TUNE.bslot * cs; // 大工の枠は少ないので、自分の建てる職場は貴重
     return v;
   }
@@ -329,15 +352,18 @@ const NE = (() => {
     const lose = (d) => d.reduce((t, x) => t + cardPts(hand[x]) * cs, 0);
     if (e.build != null) {
       let best = -Infinity;
-      hand.forEach((c, i) => {
-        if (!isBld(c) || buildCost(c, e.build) > hand.length - 1) return;
-        const d = cheapest(hand, buildCost(c, e.build), i), B = BLD[c];
-        const rest = hand.filter((x, j) => j !== i && !d.includes(j));
-        const bonus = B.end ? B.end({ ...P, bld: P.bld.concat({ key: c }), hand: rest }) - B.end(P) : 0;
+      buildSets(P, e).forEach(({ idx, cost }) => {
+        const d = cheapest(hand, cost, idx), cs2 = idx.map((i) => hand[i]);
+        const rest = hand.filter((x, j) => !idx.includes(j) && !d.includes(j));
+        const after = { ...P, bld: P.bld.concat(cs2.map((key) => ({ key }))), hand: rest };
         const uses = left * TUNE.uses + (G.round < ROUNDS ? 0.3 : 0); // ラウンド 9 は建てたそのラウンドでしか使えない
-        const use = B.e ? Math.max(0, effPts(G, { ...P, hand: rest }, B.e) + (B.e.take || 0) * 0.5 - TUNE.act) * uses : 0;
-        const v = TUNE.own + (B.nosell ? B.value * liq : B.value) + bonus + use - lose(d) - cardPts(c) * cs;
-        if (v > best) { best = v; a = { kind: 'place', ...w, build: i, disc: d }; }
+        let v = -lose(d);
+        cs2.forEach((c) => {
+          const B = BLD[c];
+          const use = B.e ? Math.max(0, effPts(G, { ...P, hand: rest }, B.e) + (B.e.take || 0) * 0.5 - TUNE.act) * uses : 0;
+          v += TUNE.own + (B.nosell ? B.value * liq : B.value) + (B.end ? B.end(after) - B.end(P) : 0) + use - cardPts(c) * cs;
+        });
+        if (v > best) { best = v; a = { kind: 'place', ...w, build: idx[0], build2: idx[1], disc: d }; }
       });
       s += best + (e.then ? effPts(G, P, { drawB: e.then }, -1) : 0);
     } else if (e.disc) {
@@ -371,6 +397,6 @@ const NE = (() => {
     return best.a;
   }
 
-  return { ROUNDS, WAGE, MAX_WORKERS, GOODS_COUNT, BLD_TOTAL, PUB, BLD, EDITION, create, seeded, canUse, needs, apply, cpuAct, score, effText, text, cardName, defOf, isBld, buildCost, handLimit, maxWorkers, penalty, unpaid, endBonus, sellable, recommendSell };
+  return { ROUNDS, WAGE, MAX_WORKERS, GOODS_COUNT, BLD_TOTAL, PUB, BLD, EDITION, create, seeded, canUse, needs, apply, cpuAct, score, effText, text, cardName, defOf, isBld, buildCost, bcost, canBuildCard, vpPts, giveVp, cats, handLimit, maxWorkers, penalty, unpaid, endBonus, sellable, recommendSell };
 })();
 if (typeof module !== 'undefined') module.exports = NE;
