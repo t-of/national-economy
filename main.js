@@ -213,19 +213,18 @@ function render() {
   ]));
 
   // 公共の職場
-  // ジャンルごとにまとめて並べる（売った建物は農業・工業・商業へ）
+  // ジャンル順に並べ替える（売った建物は農業・工業・商業へ）。同じジャンルの中は出た順
   const pub = h('div', 'public');
-  const groups = new Map(GENRES.map((g) => [g, h('div', 'pub-g', null, [h('small', 'pub-hd', g)])]));
-  for (const s of G.pub) {
+  const rank = (s) => GENRES.indexOf(genre(s.key));
+  for (const s of G.pub.slice().sort((a, b) => rank(a) - rank(b))) {
     const d = NE.defOf(s.key);
     const dots = h('span', 'dots');
     if (s.cap > 9) dots.append(h('small', null, `${s.occ.length} 人`));
     else for (let i = 0; i < s.cap; i++) {
       dots.append(i < s.occ.length ? meeple(COLORS[s.occ[i]]) : meeple('#1d1d1d', 'empty'));
     }
-    groups.get(genre(s.key)).append(miniCard(s.key, () => clickWork({ pub: s.uid }), !my || !!ui || !NE.canUse(G, { pub: s.uid }), d.name, [dots], true));
+    pub.append(miniCard(s.key, () => clickWork({ pub: s.uid }), !my || !!ui || !NE.canUse(G, { pub: s.uid }), d.name, [dots], true));
   }
-  for (const g of groups.values()) if (g.children.length > 1) pub.append(g);
   kids.push(pub);
 
   // PC では右の列（選ぶ・プレイヤー・記録）。スマホでは CSS の order で 1 列に並べ直す
