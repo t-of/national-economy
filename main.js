@@ -229,6 +229,19 @@ function posterCard(c, cls, fn, disabled) {
   return face(b, c);
 }
 
+// 作品: p 無印 / m メセナ / g グローリー（m・g は準備中）
+const EDS = [['p', 'ナショナルエコノミー', true], ['m', 'メセナ', false], ['g', 'グローリー', false]];
+// 古い保存（ed なし）は 'p'。戦績は作品ごと（byEd）。古い平らな戦績 {games, wins} は無印のものとして読む
+let settings = load('settings', {});
+if (!EDS.some((e) => e[0] === settings.ed && e[2])) settings = { ...settings, ed: 'p' };
+let stats = load('stats', {});
+if (!stats.byEd) stats = { byEd: stats.games ? { p: { games: stats.games, wins: stats.wins || 0 } } : {} };
+function recordResult(ed, won) {
+  const r = stats.byEd[ed] || (stats.byEd[ed] = { games: 0, wins: 0 });
+  r.games++; if (won) r.wins++;
+  save('stats', stats);
+}
+
 function title() {
   clearTimeout(timer);
   G = null; ui = null;
@@ -236,6 +249,12 @@ function title() {
   stage.replaceChildren(h('div', 'title', null, [
     h('h2', null, 'ナショナルエコノミー風'),
     h('p', 'muted', '手札の建物カードを、別の手札を捨てて建てる。9 ラウンド後、建物の資産価値＋現金−未払い賃金×3 で勝負。'),
+    h('div', 'row', null, EDS.map(([k, name, ok]) => {
+      const b = btn(ok ? name : `${name}（準備中）`, 'pill', () => { settings = { ...settings, ed: k }; save('settings', settings); title(); });
+      b.disabled = !ok; b.setAttribute('aria-pressed', String(settings.ed === k));
+      return b;
+    })),
+    (() => { const r = stats.byEd[settings.ed]; return r ? h('p', 'muted', `戦績 ${r.games} 局 ${r.wins} 勝`) : h('p', 'muted', '戦績 まだなし'); })(),
     h('p', null, '人数を選んではじめる'),
     h('div', 'row', null, [2, 3, 4].map((n) => btn(`${n} 人`, 'big', () => start(n)))),
     h('p', null, 'CPU 同士の対戦を観る'),
@@ -251,7 +270,8 @@ function title() {
 
 function start(n, watch) {
   sfx('round');
-  G = NE.create(n);
+  G = NE.create(n, Math.random, 'normal', settings.ed);
+  G.record = !watch;
   // 観戦: 全員 CPU にする（あなたの席も CPU が打つ）
   if (watch) G.players.forEach((p, i) => { p.human = false; p.name = `CPU${i + 1}`; });
   ui = null;
@@ -507,6 +527,7 @@ function overPanel() {
     head.textContent = order[0].p.human ? 'あなたの勝ち！' : `${order[0].p.name} の勝ち`;
     foot.replaceChildren(...order.map((o, k) => h('div', null, `${k + 1} 位 ${o.p.name}　${o.s} 点`)), btn('もう一度', 'big', title));
     foot.classList.replace('row', 'ranks');
+    if (g.record) recordResult(g.ed, order[0].p.human);
     sfx(ps.some((p) => p.human) ? (ps.some((p) => p.human && NE.score(p) === best) ? 'win' : 'lose') : 'win');
   };
   setTimeout(next, 700);

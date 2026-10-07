@@ -33,6 +33,12 @@ const NE = (() => {
   const ADDED = ['stall', 'market', 'highschool', 'super', 'univ', 'dept', 'voc', 'expo']; // ラウンド 2〜9 のはじめに 1 枚
   // 建物。cat: agri=農業 ind=工業。fac=施設（置けない・売れない）。nosell=売れない。
   // 施設の効果: hand=手札上限+、maxw=労働者の上限+、law=終了時に捨てる未払い賃金の枚数、end=終了時の点（p を受ける）
+  // 作品ごとの違い（p 無印 / m メセナ / g グローリー）。m・g の値は仕様 12-4（※は推定）
+  const EDITION = {
+    p: { goods: 24, vp: 0, pubStart: ['quarry', 'mine', 'school'] },
+    m: { goods: 22, vp: 20, pubStart: ['quarry', 'mine', 'school'] },
+    g: { goods: 30, vp: 30, pubStart: ['quarry', 'mine', 'school'] },
+  };
   const goodsIn = (p) => p.hand.filter((c) => c === 'g').length;
   const BLD = {
     farm: { name: '農場', cost: 1, value: 6, count: 8, cat: 'agri', e: { drawG: 2 } },
@@ -58,7 +64,7 @@ const NE = (() => {
     rail: { name: '鉄道', cost: 5, value: 18, count: 1, fac: true, e: null, text: '終了時、工業の建物 1 つにつき +8', end: (p) => 8 * p.bld.filter((b) => BLD[b.key].cat === 'ind').length },
     hq: { name: '本社ビル', cost: 5, value: 20, count: 1, fac: true, e: null, text: '終了時、施設 1 つにつき +6', end: (p) => 6 * p.bld.filter((b) => BLD[b.key].fac).length },
   };
-  for (const d of Object.values(BLD)) if (d.fac) d.nosell = true;
+  for (const d of Object.values(BLD)) { d.ed = 'p'; if (d.fac) d.nosell = true; }
   const BLD_TOTAL = Object.values(BLD).reduce((s, d) => s + d.count, 0);
   const defOf = (key) => PUB[key] || BLD[key];
   const isBld = (c) => c !== 'g';
@@ -112,10 +118,10 @@ const NE = (() => {
   const log = (G, s) => { G.log.push(s); if (G.log.length > 40) G.log.shift(); };
 
   // level: 'weak' | 'normal' | 'strong'（今は ふつう と同じ手の選び方。ゆらぎだけ違う）
-  function create(n, rng = Math.random, level = 'normal') {
+  function create(n, rng = Math.random, level = 'normal', ed = 'p') {
     const deck = [];
-    for (const [k, d] of Object.entries(BLD)) for (let i = 0; i < d.count; i++) deck.push(k);
-    const G = { n, rng, level, deck: shuffle(deck, rng), discard: [], goods: GOODS_COUNT, sold: 0, house: 0, round: 0, log: [], pub: [], uid: 0, nextStart: 0, phase: 'place', actor: 0, turn: 0, trimQ: [], look: null, over: false, start: Math.floor(rng() * n), chooseSell: null };
+    for (const [k, d] of Object.entries(BLD)) if (d.ed === ed) for (let i = 0; i < d.count; i++) deck.push(k);
+    const E = EDITION[ed], G = { n, rng, level, ed, deck: shuffle(deck, rng), discard: [], goods: E.goods, vpLeft: E.vp, sold: 0, house: 0, round: 0, log: [], pub: [], uid: 0, nextStart: 0, phase: 'place', actor: 0, turn: 0, trimQ: [], look: null, over: false, start: Math.floor(rng() * n), chooseSell: null };
     G.nextStart = G.start;
     G.players = [];
     G.cash0 = 0;
@@ -133,7 +139,7 @@ const NE = (() => {
   function startRound(G) {
     G.round++;
     if (G.round === 1) {
-      ['quarry', 'mine', 'school'].forEach((k) => addPub(G, k));
+      EDITION[G.ed || 'p'].pubStart.forEach((k) => addPub(G, k));
       for (let i = 0; i < Math.max(1, G.n - 1); i++) addPub(G, 'carpenter'); // 1・2 人 1、3 人 2、4 人 3
     } else addPub(G, ADDED[G.round - 2]);
     G.pub.forEach((w) => { w.occ = []; });
@@ -365,6 +371,6 @@ const NE = (() => {
     return best.a;
   }
 
-  return { ROUNDS, WAGE, MAX_WORKERS, GOODS_COUNT, BLD_TOTAL, PUB, BLD, create, seeded, canUse, needs, apply, cpuAct, score, effText, text, cardName, defOf, isBld, buildCost, handLimit, maxWorkers, penalty, unpaid, endBonus, sellable, recommendSell };
+  return { ROUNDS, WAGE, MAX_WORKERS, GOODS_COUNT, BLD_TOTAL, PUB, BLD, EDITION, create, seeded, canUse, needs, apply, cpuAct, score, effText, text, cardName, defOf, isBld, buildCost, handLimit, maxWorkers, penalty, unpaid, endBonus, sellable, recommendSell };
 })();
 if (typeof module !== 'undefined') module.exports = NE;
