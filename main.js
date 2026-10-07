@@ -69,6 +69,10 @@ const PUB_ICON = {
   stall: KIND.shop[3], market: KIND.shop[3], super: KIND.shop[3], dept: KIND.shop[3],
   expo: 'M12 3a9 9 0 100 18 9 9 0 000-18zM3 12h18M12 3c-3 3-3 15 0 18M12 3c3 3 3 15 0 18',
 };
+// 場のジャンル（並べる順）。公共の職場は役目で、売った建物は手札と同じ区分で分ける
+const GENRES = ['資源', '建設', '教育', '商業', '農業', '工業'];
+const PUB_GENRE = { quarry: '資源', mine: '資源', carpenter: '建設', school: '教育', highschool: '教育', univ: '教育', voc: '教育' };
+const genre = (key) => PUB_GENRE[key] || KIND[(NE.BLD[key] && NE.BLD[key].cat) || 'shop'][2];
 // 労働者のコマ（人の形）。used=置いたあと（中抜き）、temp=研修中（点線）
 const MEEPLE = 'M12 2.5a3 3 0 110 6 3 3 0 010-6zM8.5 9.5h7l5 3.5-1.2 2-3.8-2 1.8 8.5h-3.6L12 17l-1.7 4.5H6.7l1.8-8.5-3.8 2-1.2-2z';
 function meeple(color, cls) {
@@ -209,7 +213,9 @@ function render() {
   ]));
 
   // 公共の職場
+  // ジャンルごとにまとめて並べる（売った建物は農業・工業・商業へ）
   const pub = h('div', 'public');
+  const groups = new Map(GENRES.map((g) => [g, h('div', 'pub-g', null, [h('small', 'pub-hd', g)])]));
   for (const s of G.pub) {
     const d = NE.defOf(s.key);
     const dots = h('span', 'dots');
@@ -217,8 +223,9 @@ function render() {
     else for (let i = 0; i < s.cap; i++) {
       dots.append(i < s.occ.length ? meeple(COLORS[s.occ[i]]) : meeple('#1d1d1d', 'empty'));
     }
-    pub.append(miniCard(s.key, () => clickWork({ pub: s.uid }), !my || !!ui || !NE.canUse(G, { pub: s.uid }), d.name, [dots], true));
+    groups.get(genre(s.key)).append(miniCard(s.key, () => clickWork({ pub: s.uid }), !my || !!ui || !NE.canUse(G, { pub: s.uid }), d.name, [dots], true));
   }
+  for (const g of groups.values()) if (g.children.length > 1) pub.append(g);
   kids.push(pub);
 
   // PC では右の列（選ぶ・プレイヤー・記録）。スマホでは CSS の order で 1 列に並べ直す

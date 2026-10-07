@@ -64,6 +64,8 @@ button.big { background: var(--accent); color: #222; border: 0; border-radius: 1
 button.big:disabled, button:disabled { opacity: 0.4; }
 .rules { text-align: left; font-size: 14px; color: var(--muted); }
 .public { display: flex; flex-wrap: wrap; gap: 6px; }
+.pub-g { display: flex; flex-wrap: wrap; gap: 6px; width: 100%; }
+.pub-hd { flex-basis: 100%; font-size: 11px; font-weight: 700; letter-spacing: .1em; opacity: .7; }
 .dots { display: flex; gap: 4px; flex-wrap: wrap; }
 .dots .mp { width: 18px; height: 18px; }
 .player, .choice { border: 2px solid; border-radius: 12px; padding: 8px; display: flex; flex-direction: column; gap: 4px; background: rgba(0,0,0,.18); }
