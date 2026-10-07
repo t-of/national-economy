@@ -205,7 +205,7 @@ function face(b, key, dots) {
   if (d && d.nosell) art.append(h('span', 'c-ns', '売れない'));
   if (dots) art.append(h('span', 'pc-dots', null, [dots]));
   const idx = g ? 'G' : p ? 'P' + pad2(Object.keys(NE.PUB).indexOf(key)) : 'No.' + pad2(Object.keys(NE.BLD).indexOf(key));
-  const left = g ? '共通 ×多数' : p ? '公共 ×1' : `×${d.count}`;
+  const left = g ? '共通 ×多数' : p ? (p.many ? '3〜4人: 何人でも' : '公共 ×1') : `×${d.count}`;
   b.append(
     h('span', 'pc-hd', null, [h('span', 'pc-cost', null, [h('small', null, cl), document.createTextNode(cv)]), h('span', 'pc-title', null, [h('small', null, k[2]), nm]), ib]),
     art,

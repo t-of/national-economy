@@ -167,6 +167,16 @@ function check(G) {
   assert.equal(E(['g_expo', 'steel', 'factory']), 24, '工業 32'); assert.equal(E(['g_expo', 'steel']), 0);
 }
 
+// 家計の職場: 3〜4 人は何人でも、2 人は 1 人（カードの印刷どおり）
+{
+  const mk = (n) => { const G = NE.create(n, NE.seeded(3)); G.round = 0; G.pub = []; G.uid = 0; G.players.forEach((p) => { p.hand = ['g', 'g', 'g']; p.free = 3; }); G.round = 1; G.pub.push({ uid: 1, key: 'stall', cap: n >= 3 ? 99 : 1, occ: [] }); G.house = 30; G.turn = G.actor = 0; return G; };
+  let G = mk(3); assert.ok(NE.apply(G, { kind: 'place', pub: 1, disc: [0] }), '1 人目'); G.turn = G.actor = 0; G.phase = 'place';
+  assert.ok(NE.canUse(G, { pub: 1 }), '3 人: 同じ人が 2 人目も置ける'); assert.ok(NE.apply(G, { kind: 'place', pub: 1, disc: [0] })); assert.equal(G.pub[0].occ.length, 2);
+  G = mk(2); NE.apply(G, { kind: 'place', pub: 1, disc: [0] }); G.turn = G.actor = 0; G.phase = 'place'; assert.ok(!NE.canUse(G, { pub: 1 }), '2 人戦では置けない');
+  G = mk(3); G.house = 5; assert.ok(!NE.canUse(G, { pub: 1 }), '家計が足りなければ置けない');
+  const R = NE.create(4, NE.seeded(5)); for (let i = 0; i < 40 && R.round < 3; i++) NE.apply(R, NE.cpuAct(R)); assert.ok(R.pub.some((s) => s.key === 'stall' && s.cap > 9), '4 人は ラウンド 2 の露店が何人でも');
+}
+
 const rows = [];
 for (const [ed, n] of [['p', 2], ['p', 3], ['p', 4], ['m', 2], ['m', 3], ['m', 4], ['g', 2], ['g', 3], ['g', 4]]) {
   let sum = 0, win = 0, bld = 0, debt = 0, debtGames = 0, steps = 0, sold = 0;

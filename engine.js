@@ -6,7 +6,7 @@
 //   最終ラウンドの終わりは手札を捨てない（農協のため）※ / 建てた建物はそのラウンドからすぐ使える※
 //   売るのは賃金が払えないときだけで、払えるまで売る（売れる建物がなければ未払い）※
 //   焼畑は使ったら建物の捨て札へ※ / 設計事務所で取らなかった札は建物の捨て札へ※
-//   労働組合の人数は研修中も数える※ / 家計の職場は何度でも（人数が埋まるまで）※
+//   労働組合の人数は研修中も数える※ / 家計の職場の人数: 3〜4 人は何人でも（カードの印刷どおり。仕様 1-5 の推定を直した）、2 人は 1 人
 const NE = (() => {
   const ROUNDS = 9, MAX_WORKERS = 5, HAND_LIMIT = 5, START_HAND = 3, GOODS_COUNT = 24;
   const WAGE = [2, 2, 3, 3, 3, 4, 4, 5, 5];
@@ -23,14 +23,14 @@ const NE = (() => {
     mine: { name: '鉱山', cap: 99, e: { drawB: 1 } },
     school: { name: '学校', e: { hire: 1 } },
     carpenter: { name: '大工', e: { build: 0 } },
-    stall: { name: '露店', e: { disc: 1, take: 6 } },
-    market: { name: '市場', e: { disc: 2, take: 12 } },
+    stall: { name: '露店', many: true, e: { disc: 1, take: 6 } },
+    market: { name: '市場', many: true, e: { disc: 2, take: 12 } },
     highschool: { name: '高等学校', e: { hireTo: 4 } },
-    super: { name: 'スーパーマーケット', e: { disc: 3, take: 18 } },
+    super: { name: 'スーパーマーケット', many: true, e: { disc: 3, take: 18 } },
     univ: { name: '大学', e: { hireTo: 5 } },
-    dept: { name: '百貨店', e: { disc: 4, take: 24 } },
+    dept: { name: '百貨店', many: true, e: { disc: 4, take: 24 } },
     voc: { name: '専門学校', e: { hire: 1, now: true } },
-    expo: { name: '万博', e: { disc: 5, take: 30 } },
+    expo: { name: '万博', many: true, e: { disc: 5, take: 30 } },
     ruins: { name: '遺跡', e: { drawG: 1, vp: 1 } }, // グローリーだけ。最初からある
   };
   const ADDED = ['stall', 'market', 'highschool', 'super', 'univ', 'dept', 'voc', 'expo']; // ラウンド 2〜9 のはじめに 1 枚
@@ -221,7 +221,8 @@ const NE = (() => {
     return G;
   }
 
-  const addPub = (G, key, cap) => G.pub.push({ uid: ++G.uid, key, cap: cap || PUB[key].cap || 1, occ: [] });
+  // 家計の職場（many）は、3〜4 人のとき何人でも置ける（カードの印刷どおり。2 人は 1 人）
+  const addPub = (G, key, cap) => G.pub.push({ uid: ++G.uid, key, cap: cap || (PUB[key].many && G.n >= 3 ? 99 : PUB[key].cap || 1), occ: [] });
   function startRound(G) {
     G.round++;
     if (G.round === 1) {
